@@ -27,6 +27,5 @@ public class Servicio {
     @JoinColumn(name = "categoriaId")
     private Categoria categoriaId;
     private String categoriaNombre;
-    @Pattern(regexp = "Activo|Inactivo")
-    private String estado;
+    private Boolean estado = true;
 }
