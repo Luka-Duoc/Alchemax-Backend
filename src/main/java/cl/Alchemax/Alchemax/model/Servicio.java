@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.action.internal.OrphanRemovalAction;
 
 @Data
 @AllArgsConstructor
@@ -21,8 +22,9 @@ public class Servicio {
     @NotNull(message = "El precio no puede ser nulo")
     @Positive(message = "El precio no puede ser menor a 0")
     private int precio;
-    @Pattern(regexp = "Evaluacion|Plan|Control")
+    @Pattern(regexp = "evaluacion|plan|control")
     private String tipo;
+    private String icono;
     @ManyToOne
     @JoinColumn(name = "categoriaId")
     private Categoria categoriaId;

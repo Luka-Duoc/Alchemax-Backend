@@ -1,9 +1,6 @@
 package cl.Alchemax.Alchemax.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -21,6 +18,7 @@ public class Usuario {
     @NotBlank(message = "El nombre no puede estar vacio")
     private String nombre;
     @NotBlank(message = "El email no puede estar vacio")
+    @Column(unique = true, name = "email")
     private String email;
     @Pattern(regexp = "(?i)hombre|masculino|mujer|femenino|otro")
     private String genero;

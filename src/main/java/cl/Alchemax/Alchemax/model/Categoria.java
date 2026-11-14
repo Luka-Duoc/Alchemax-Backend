@@ -20,5 +20,5 @@ public class Categoria {
     @NotBlank(message = "El nombre no puede estar vacio")
     private String nombre;
     private String descripcion;
-    private int serviciosAsociados;
+    private Integer  serviciosAsociados = 0;
 }

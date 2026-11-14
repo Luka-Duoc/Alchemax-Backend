@@ -22,10 +22,12 @@ public class CompraController {
         return ResponseEntity.ok(compraService.listarPorUsuario(usuarioId));
     }
 
-    @PostMapping
-    public ResponseEntity<?> guardar(@RequestBody Compra c) {
-        Compra compra = compraService.guardar(c);
-        if (compra == null) return new ResponseEntity<>(compra, HttpStatus.BAD_REQUEST);
+    @PostMapping("/usuario/{usuarioId}")
+    public ResponseEntity<?> guardar(@PathVariable Long usuarioId, @RequestBody Compra c) {
+        Compra compra = compraService.guardar(usuarioId, c);
+        if (compra == null) {
+            return ResponseEntity.badRequest().body("Usuario no encontrado.");
+        }
         return new ResponseEntity<>(compra, HttpStatus.CREATED);
     }
 

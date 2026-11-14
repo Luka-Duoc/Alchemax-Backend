@@ -32,8 +32,12 @@ public class CategoriaController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        categoriaService.eliminar(id);
-        return ResponseEntity.noContent().build();
+        try {
+            categoriaService.eliminar(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("No se puede eliminar la categoría porque tiene servicios asociados.");
+        }
     }
 
     @PutMapping("/{id}")

@@ -2,6 +2,7 @@ package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<Usuario> guardar(@RequestBody Usuario u) {
+    public ResponseEntity<Usuario> guardar(@Valid @RequestBody Usuario u) {
         Usuario user = usuarioService.guardar(u);
         if(user == null) return new ResponseEntity<>(user, HttpStatus.BAD_REQUEST);
         return new ResponseEntity<>(user, HttpStatus.CREATED);
@@ -41,5 +42,24 @@ public class UsuarioController {
         Usuario user = usuarioService.editar(u, id);
         if(user == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(user);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Usuario u) {
+        Usuario usuario = usuarioService.login(u.getEmail(), u.getPassword());
+
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
+        }
+        return ResponseEntity.ok(usuario);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+        Usuario usuario = usuarioService.buscarPorId(id);
+        if (usuario == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(usuario);
     }
 }

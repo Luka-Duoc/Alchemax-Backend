@@ -32,6 +32,12 @@ public class ServicioService {
         ser.setPrecio(s.getPrecio());
         ser.setTipo(s.getTipo());
         ser.setDescripcion(s.getDescripcion());
+        ser.setIcono(s.getIcono());
+        ser.setCategoriaId(s.getCategoriaId());
+        ser.setCategoriaNombre(s.getCategoriaNombre());
+        if (s.getEstado() != null) {
+            ser.setEstado(s.getEstado());
+        }
 
         return servicioRepository.save(ser);
     }
