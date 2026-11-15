@@ -1,11 +1,14 @@
 package cl.Alchemax.Alchemax.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -29,5 +32,14 @@ public class Usuario {
     private String rol;
     private Integer pesoActual;
     private String objetivoPrincipal;
+
+    // Indica que usuario es dueño del carrito por lo que si se borra al usuario se elimina el carrito relacionado
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Carrito carrito;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Compra> compras = new ArrayList<>();
 
 }

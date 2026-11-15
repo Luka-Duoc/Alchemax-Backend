@@ -16,12 +16,10 @@ public class ServicioController {
 
     @Autowired
     private ServicioService servicioService;
-
     @GetMapping
     public ResponseEntity<List<?>> listar() {
         return ResponseEntity.ok(servicioService.listar());
     }
-
     @GetMapping("/buscar")
     public ResponseEntity<List<?>> buscarPorNombre(@RequestParam String nombre) {
         List<Servicio> servicio = servicioService.buscarServicio(nombre);
@@ -30,7 +28,6 @@ public class ServicioController {
         }
         return ResponseEntity.ok(servicio);
     }
-
     @PostMapping
     public ResponseEntity<?> guardar(@RequestBody Servicio s) {
         Servicio ser = servicioService.guardar(s);

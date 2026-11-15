@@ -14,17 +14,13 @@ public class ItemCarrito {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @ManyToOne(optional = false)
     @JoinColumn(name = "servicio_id", nullable = false)
     private Servicio servicio;
-
     @Column(nullable = false)
     private int cantidad = 1;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "carrito_id")
     @JsonIgnore
-
     private Carrito carrito;
 }
