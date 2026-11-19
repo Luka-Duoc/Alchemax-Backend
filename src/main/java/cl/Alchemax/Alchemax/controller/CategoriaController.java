@@ -158,8 +158,6 @@ public class CategoriaController {
                     schema = @Schema(type = "object", implementation = ErrorResponse.class)
             )
     )
-
-
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@RequestBody Categoria c, @PathVariable Long id) {
         Categoria cat = categoriaService.actualizar(c, id);
