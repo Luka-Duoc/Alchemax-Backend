@@ -49,6 +49,36 @@ public class CitaService {
         return citaRepository.findByUsuario_Id(usuarioId);
     }
 
+    // Validar disponibilidad de horario para un profesional
+    public boolean tieneConflictoHorario(String profesional, LocalDate fecha, String hora, Long excluirCitaId) {
+        if (profesional == null || fecha == null || hora == null) {
+            return false;
+        }
+        String profNormalizado = profesional.trim();
+        String horaNormalizada = hora.trim();
+
+        List<Cita> citasDelDia = citaRepository.findByFecha(fecha);
+        if (citasDelDia == null) {
+            return false;
+        }
+
+        for (Cita existente : citasDelDia) {
+            if (excluirCitaId != null && excluirCitaId.equals(existente.getId())) {
+                continue;
+            }
+            if ("Cancelada".equalsIgnoreCase(existente.getEstado())) {
+                continue;
+            }
+            if (existente.getProfesional() != null
+                    && existente.getHora() != null
+                    && existente.getProfesional().trim().equalsIgnoreCase(profNormalizado)
+                    && existente.getHora().trim().equals(horaNormalizada)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Guardar
     public Cita guardar(Cita c) {
         c.setId(null);

@@ -154,7 +154,7 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/usuarios/login"
                         ).permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/api/auth/me", "/api/auth/refresh").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

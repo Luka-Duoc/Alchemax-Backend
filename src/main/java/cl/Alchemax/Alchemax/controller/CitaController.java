@@ -2,6 +2,7 @@ package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.exception.ErrorResponse;
 import cl.Alchemax.Alchemax.model.Cita;
+import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CitaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -196,7 +198,19 @@ public class CitaController {
             )
     )
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<Cita>> listarPorUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<?> listarPorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication
+    ) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            ErrorResponse error = new ErrorResponse(
+                    "403",
+                    "Acceso denegado",
+                    "No tienes permisos para consultar las citas de otro usuario.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
         return ResponseEntity.ok(citaService.listarPorUsuario(usuarioId));
     }
 
@@ -229,7 +243,29 @@ public class CitaController {
             )
     )
     @PostMapping
-    public ResponseEntity<?> guardar(@Valid @RequestBody Cita c) {
+    public ResponseEntity<?> guardar(@Valid @RequestBody Cita c, Authentication authentication) {
+        if (c.getUsuario() != null
+                && c.getUsuario().getId() != null
+                && !AccessControlHelper.puedeAccederRecursoUsuario(authentication, c.getUsuario().getId())) {
+            ErrorResponse error = new ErrorResponse(
+                    "403",
+                    "Acceso denegado",
+                    "No puedes agendar citas a nombre de otro usuario.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
+
+        if (citaService.tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), null)) {
+            ErrorResponse error = new ErrorResponse(
+                    "409",
+                    "Horario no disponible",
+                    "El profesional seleccionado ya cuenta con una cita activa en esa fecha y hora.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+
         Cita cita = citaService.guardar(c);
         if (cita == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -275,6 +311,15 @@ public class CitaController {
     )
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@Valid @RequestBody Cita c, @PathVariable Long id) {
+        if (citaService.tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), id)) {
+            ErrorResponse error = new ErrorResponse(
+                    "409",
+                    "Horario no disponible",
+                    "El profesional seleccionado ya cuenta con una cita activa en esa fecha y hora.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
         Cita cita = citaService.actualizar(c, id);
         if (cita == null) {
             return ResponseEntity.notFound().build();

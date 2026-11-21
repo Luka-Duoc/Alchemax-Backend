@@ -97,6 +97,11 @@ class CitaControllerTest {
         mockMvc.perform(get("/api/citas/usuario/10").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1));
+
+        // Un paciente (usuarioId=2) no debe poder consultar las citas de otro usuario (usuarioId=10)
+        mockMvc.perform(get("/api/citas/usuario/10")
+                        .with(jwt().jwt(j -> j.claim("rol", "USUARIO").claim("usuarioId", 2L))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -135,6 +140,15 @@ class CitaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyInvalido))
                 .andExpect(status().isBadRequest());
+
+        when(citaService.tieneConflictoHorario(eq("Dra. Ana Pérez"), eq(LocalDate.of(2026, 11, 25)), eq("10:30"), any()))
+                .thenReturn(true);
+
+        mockMvc.perform(post("/api/citas")
+                        .with(jwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValido))
+                .andExpect(status().isConflict());
     }
 
     @Test

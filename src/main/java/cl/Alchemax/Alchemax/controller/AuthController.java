@@ -133,6 +133,21 @@ public class AuthController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+    @Operation(summary = "Renovar token JWT", description = "Emite un nuevo token JWT vigente para el usuario autenticado.")
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return usuarioService.findbyEmail(authentication.getName().trim().toLowerCase())
+                .<ResponseEntity<?>>map(u -> {
+                    String nuevoToken = jwtService.generarToken(u);
+                    return ResponseEntity.ok(AuthResponse.from(nuevoToken, u));
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    }
+
     @Operation(summary = "Actualizar perfil propio", description = "Permite al usuario autenticado actualizar sus propios datos y opcionalmente cambiar su contraseña.")
     @PutMapping("/me")
     public ResponseEntity<?> updateMe(

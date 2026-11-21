@@ -31,7 +31,7 @@ public class JwtService {
         cl.Alchemax.Alchemax.model.Rol rolEfectivo =
                 usuario.getRol() != null ? usuario.getRol() : cl.Alchemax.Alchemax.model.Rol.usuario;
 
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .issuer(issuer)
                 .issuedAt(ahora)
                 .expiresAt(
@@ -39,8 +39,13 @@ public class JwtService {
                 )
                 .subject(usuario.getEmail())
                 .claim("nombre", usuario.getNombre())
-                .claim("rol", rolEfectivo.name().toUpperCase())
-                .build();
+                .claim("rol", rolEfectivo.name().toUpperCase());
+
+        if (usuario.getId() != null) {
+            claimsBuilder.claim("usuarioId", usuario.getId());
+        }
+
+        JwtClaimsSet claims = claimsBuilder.build();
 
         JwsHeader header = JwsHeader
                 .with(MacAlgorithm.HS256)

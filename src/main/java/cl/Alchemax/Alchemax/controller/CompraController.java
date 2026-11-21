@@ -2,6 +2,7 @@ package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.exception.ErrorResponse;
 import cl.Alchemax.Alchemax.model.Compra;
+import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CompraService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -12,8 +13,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -53,7 +56,19 @@ public class CompraController {
             )
     )
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<Compra>> listarPorUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<?> listarPorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication
+    ) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            ErrorResponse error = new ErrorResponse(
+                    "403",
+                    "Acceso denegado",
+                    "No tienes permisos para consultar el historial de compras de otro usuario.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
         return ResponseEntity.ok(compraService.listarPorUsuario(usuarioId));
     }
 
@@ -86,7 +101,20 @@ public class CompraController {
             )
     )
     @PostMapping("/usuario/{usuarioId}")
-    public ResponseEntity<?> guardar(@PathVariable Long usuarioId, @RequestBody Compra c) {
+    public ResponseEntity<?> guardar(
+            @PathVariable Long usuarioId,
+            @RequestBody Compra c,
+            Authentication authentication
+    ) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            ErrorResponse error = new ErrorResponse(
+                    "403",
+                    "Acceso denegado",
+                    "No tienes permisos para registrar compras en la cuenta de otro usuario.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
         Compra compra = compraService.guardar(usuarioId, c);
         if (compra == null) {
             return ResponseEntity.badRequest().body("Usuario no encontrado.");

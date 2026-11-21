@@ -1,6 +1,7 @@
 package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.model.Carrito;
+import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CarritoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -9,7 +10,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,7 +56,14 @@ public class CarritoController {
             )
     )
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<?> obtenerCarrito(@PathVariable Long usuarioId) {
+    public ResponseEntity<?> obtenerCarrito(
+            @PathVariable Long usuarioId,
+            Authentication authentication
+    ) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes permisos para acceder al carrito de otro usuario.");
+        }
         Carrito carrito = carritoService.obtenerPorUsuario(usuarioId);
         if (carrito == null) {
             return ResponseEntity.notFound().build();
@@ -93,7 +103,12 @@ public class CarritoController {
     public ResponseEntity<?> agregarItem(
             @PathVariable Long usuarioId,
             @RequestParam Long servicioId,
-            @RequestParam(defaultValue = "1") int cantidad) {
+            @RequestParam(defaultValue = "1") int cantidad,
+            Authentication authentication) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes permisos para modificar el carrito de otro usuario.");
+        }
 
         Carrito carrito = carritoService.agregarItem(usuarioId, servicioId, cantidad);
         if (carrito == null) {
@@ -133,7 +148,12 @@ public class CarritoController {
     @DeleteMapping("/usuario/{usuarioId}/remover")
     public ResponseEntity<?> removerItem(
             @PathVariable Long usuarioId,
-            @RequestParam Long servicioId) {
+            @RequestParam Long servicioId,
+            Authentication authentication) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes permisos para modificar el carrito de otro usuario.");
+        }
 
         Carrito carrito = carritoService.removerItem(usuarioId, servicioId);
         if (carrito == null) {
@@ -171,7 +191,14 @@ public class CarritoController {
             )
     )
     @DeleteMapping("/usuario/{usuarioId}/vaciar")
-    public ResponseEntity<?> vaciarCarrito(@PathVariable Long usuarioId) {
+    public ResponseEntity<?> vaciarCarrito(
+            @PathVariable Long usuarioId,
+            Authentication authentication
+    ) {
+        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes permisos para vaciar el carrito de otro usuario.");
+        }
         Carrito carrito = carritoService.vaciarCarrito(usuarioId);
         if (carrito == null) {
             return ResponseEntity.badRequest().body("Carrito no encontrado.");

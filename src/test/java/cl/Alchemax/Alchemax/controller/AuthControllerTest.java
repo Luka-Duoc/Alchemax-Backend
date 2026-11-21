@@ -177,6 +177,12 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("camila@gmail.com"))
                 .andExpect(jsonPath("$.password").doesNotExist());
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(jwt().jwt(j -> j.subject("camila@gmail.com").claim("rol", "USUARIO"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.email").value("camila@gmail.com"));
     }
 
     @Test

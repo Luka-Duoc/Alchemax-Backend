@@ -144,4 +144,14 @@ class CitaServiceTest {
         assertFalse(citaService.eliminar(99L));
         verify(citaRepository, never()).deleteById(99L);
     }
+
+    @Test
+    void tieneConflictoHorarioDebeDetectarColisionDeProfesionalFechaYHora() {
+        LocalDate fecha = LocalDate.of(2026, 11, 25);
+        when(citaRepository.findByFecha(fecha)).thenReturn(List.of(citaEjemplo));
+
+        assertTrue(citaService.tieneConflictoHorario("Dra. Ana Pérez", fecha, "10:30", null));
+        assertFalse(citaService.tieneConflictoHorario("Dra. Ana Pérez", fecha, "10:30", 1L));
+        assertFalse(citaService.tieneConflictoHorario("Dra. Ana Pérez", fecha, "11:00", null));
+    }
 }
