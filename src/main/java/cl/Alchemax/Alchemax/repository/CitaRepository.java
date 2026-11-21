@@ -48,4 +48,16 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
 
     @Query("select c from Cita c where (c.estado <> 'Cancelada' and c.slotActivo is null) or length(c.hora) <> 5")
     List<Cita> findCitasPendientesDeNormalizar();
+
+    @Query("""
+        select c.estado, count(c)
+        from Cita c
+        where (:inicio is null or c.fecha >= :inicio)
+          and (:fin is null or c.fecha <= :fin)
+        group by c.estado
+    """)
+    List<Object[]> contarPorEstadoEnRango(
+            @Param("inicio") LocalDate inicio,
+            @Param("fin") LocalDate fin
+    );
 }

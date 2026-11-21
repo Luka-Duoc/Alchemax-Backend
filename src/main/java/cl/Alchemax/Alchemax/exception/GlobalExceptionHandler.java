@@ -28,6 +28,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(SolicitudInvalidaException.class)
+    public ResponseEntity<ErrorResponse> handleSolicitudInvalida(SolicitudInvalidaException ex) {
+        ErrorResponse error = new ErrorResponse(
+                "400",
+                "Solicitud inválida",
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(AccesoDenegadoException.class)
     public ResponseEntity<ErrorResponse> handleAccesoDenegado(AccesoDenegadoException ex) {
         ErrorResponse error = new ErrorResponse(
