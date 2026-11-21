@@ -1,7 +1,10 @@
 package cl.Alchemax.Alchemax.controller;
 
+import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
 import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.model.Carrito;
 import cl.Alchemax.Alchemax.model.ItemCarrito;
+import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.ItemCarritoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -9,9 +12,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -28,7 +33,7 @@ public class ItemCarritoController {
 
     @Operation(
             summary = "Listar todos los ítems de carrito",
-            description = "Método que muestra una lista de todos los ítems registrados en los carritos"
+            description = "Método que muestra una lista de todos los ítems registrados en los carritos (restringido a ADMIN)"
     )
     @ApiResponse(
             responseCode = "200",
@@ -41,6 +46,14 @@ public class ItemCarritoController {
             )
     )
     @ApiResponse(
+            responseCode = "403",
+            description = "Acceso denegado (solo ADMIN)",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @ApiResponse(
             responseCode = "500",
             description = "Error interno del servidor",
             content = @Content(
@@ -49,13 +62,18 @@ public class ItemCarritoController {
             )
     )
     @GetMapping
-    public ResponseEntity<List<ItemCarrito>> listar() {
+    public ResponseEntity<List<ItemCarrito>> listar(Authentication authentication) {
+        if (!AccessControlHelper.esAdmin(authentication)) {
+            throw new AccesoDenegadoException(
+                    "Solo un administrador puede listar todos los ítems de carrito."
+            );
+        }
         return ResponseEntity.ok(itemCarritoService.listar());
     }
 
     @Operation(
             summary = "Buscar ítem de carrito por ID",
-            description = "Busca un ítem de carrito registrado mediante su ID"
+            description = "Busca un ítem de carrito registrado mediante su ID validando propiedad"
     )
     @ApiResponse(
             responseCode = "200",
@@ -63,6 +81,14 @@ public class ItemCarritoController {
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ItemCarrito.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "403",
+            description = "No tienes permisos para acceder a un ítem de otro carrito",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
             )
     )
     @ApiResponse(
@@ -82,17 +108,25 @@ public class ItemCarritoController {
             )
     )
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+    public ResponseEntity<?> obtenerPorId(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
         ItemCarrito item = itemCarritoService.buscarPorId(id);
         if (item == null) {
             return ResponseEntity.notFound().build();
         }
+        AccessControlHelper.verificarAccesoItemCarrito(
+                authentication,
+                item,
+                "No tienes permisos para acceder a un ítem de otro carrito."
+        );
         return ResponseEntity.ok(item);
     }
 
     @Operation(
             summary = "Listar ítems por carrito",
-            description = "Obtiene la lista de ítems asociados a un carrito específico"
+            description = "Obtiene la lista de ítems asociados a un carrito específico validando propiedad"
     )
     @ApiResponse(
             responseCode = "200",
@@ -105,6 +139,22 @@ public class ItemCarritoController {
             )
     )
     @ApiResponse(
+            responseCode = "403",
+            description = "No tienes permisos para consultar los ítems del carrito de otro usuario",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Carrito no encontrado",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @ApiResponse(
             responseCode = "500",
             description = "Error interno del servidor",
             content = @Content(
@@ -113,7 +163,20 @@ public class ItemCarritoController {
             )
     )
     @GetMapping("/carrito/{carritoId}")
-    public ResponseEntity<List<ItemCarrito>> listarPorCarrito(@PathVariable Long carritoId) {
+    public ResponseEntity<List<ItemCarrito>> listarPorCarrito(
+            @PathVariable Long carritoId,
+            Authentication authentication
+    ) {
+        Carrito carrito = itemCarritoService.obtenerCarrito(carritoId);
+        if (carrito == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Long ownerId = (carrito.getUsuario() != null) ? carrito.getUsuario().getId() : null;
+        AccessControlHelper.verificarAccesoComercialUsuario(
+                authentication,
+                ownerId,
+                "No tienes permisos para consultar los ítems del carrito de otro usuario."
+        );
         return ResponseEntity.ok(itemCarritoService.listarPorCarrito(carritoId));
     }
 
@@ -138,6 +201,14 @@ public class ItemCarritoController {
             )
     )
     @ApiResponse(
+            responseCode = "403",
+            description = "No tienes permisos para modificar el carrito de otro usuario",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @ApiResponse(
             responseCode = "500",
             description = "Error interno del servidor",
             content = @Content(
@@ -149,11 +220,36 @@ public class ItemCarritoController {
     public ResponseEntity<?> guardar(
             @PathVariable Long carritoId,
             @RequestParam Long servicioId,
-            @RequestParam(defaultValue = "1") int cantidad) {
+            @RequestParam(defaultValue = "1") int cantidad,
+            Authentication authentication) {
 
-        ItemCarrito item = itemCarritoService.guardar(carritoId, servicioId, cantidad);
+        Carrito carrito = itemCarritoService.obtenerCarrito(carritoId);
+        if (carrito == null) {
+            ErrorResponse error = new ErrorResponse(
+                    "400",
+                    "Solicitud inválida",
+                    "Carrito o Servicio no válido.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        Long ownerId = (carrito.getUsuario() != null) ? carrito.getUsuario().getId() : null;
+        AccessControlHelper.verificarAccesoComercialUsuario(
+                authentication,
+                ownerId,
+                "No tienes permisos para modificar el carrito de otro usuario."
+        );
+
+        ItemCarrito item = itemCarritoService.guardarEnCarrito(carrito, servicioId, cantidad);
         if (item == null) {
-            return ResponseEntity.badRequest().body("Carrito o Servicio no válido.");
+            ErrorResponse error = new ErrorResponse(
+                    "400",
+                    "Solicitud inválida",
+                    "Carrito o Servicio no válido.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.badRequest().body(error);
         }
         return new ResponseEntity<>(item, HttpStatus.CREATED);
     }
@@ -179,6 +275,14 @@ public class ItemCarritoController {
             )
     )
     @ApiResponse(
+            responseCode = "403",
+            description = "No tienes permisos para modificar un ítem de otro carrito",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @ApiResponse(
             responseCode = "404",
             description = "El ID del ítem o del servicio no se pudo encontrar",
             content = @Content(
@@ -195,7 +299,11 @@ public class ItemCarritoController {
             )
     )
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@RequestBody ItemCarrito item, @PathVariable Long id) {
+    public ResponseEntity<?> actualizar(
+            @Valid @RequestBody ItemCarrito item,
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
         if (item.getCantidad() <= 0) {
             ErrorResponse error = new ErrorResponse(
                     "400",
@@ -206,7 +314,18 @@ public class ItemCarritoController {
             return ResponseEntity.badRequest().body(error);
         }
 
-        ItemCarrito actualizado = itemCarritoService.actualizar(item, id);
+        ItemCarrito existente = itemCarritoService.buscarPorId(id);
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        AccessControlHelper.verificarAccesoItemCarrito(
+                authentication,
+                existente,
+                "No tienes permisos para modificar un ítem de otro carrito."
+        );
+
+        ItemCarrito actualizado = itemCarritoService.actualizarExistente(existente, item);
         if (actualizado == null) {
             return ResponseEntity.notFound().build();
         }
@@ -221,6 +340,14 @@ public class ItemCarritoController {
             responseCode = "204",
             description = "Ítem eliminado con éxito",
             content = @Content
+    )
+    @ApiResponse(
+            responseCode = "403",
+            description = "No tienes permisos para eliminar un ítem de otro carrito",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
     )
     @ApiResponse(
             responseCode = "404",
@@ -239,8 +366,22 @@ public class ItemCarritoController {
             )
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        if (!itemCarritoService.eliminar(id)) {
+    public ResponseEntity<?> eliminar(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        ItemCarrito existente = itemCarritoService.buscarPorId(id);
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        AccessControlHelper.verificarAccesoItemCarrito(
+                authentication,
+                existente,
+                "No tienes permisos para eliminar un ítem de otro carrito."
+        );
+
+        if (!itemCarritoService.eliminarExistente(existente)) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();

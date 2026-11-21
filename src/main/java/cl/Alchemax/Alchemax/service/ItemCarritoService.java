@@ -34,15 +34,25 @@ public class ItemCarritoService {
         return itemCarritoRepository.findById(id).orElse(null);
     }
 
+    // Buscar carrito por ID para verificación de propiedad
+    public Carrito obtenerCarrito(Long carritoId) {
+        return carritoRepository.findById(carritoId).orElse(null);
+    }
+
     // Listar por carrito
     public List<ItemCarrito> listarPorCarrito(Long carritoId) {
         return itemCarritoRepository.findByCarrito_Id(carritoId);
     }
 
-    // Guardar
+    // Guardar recibiendo carritoId
     public ItemCarrito guardar(Long carritoId, Long servicioId, int cantidad) {
         Carrito carrito = carritoRepository.findById(carritoId).orElse(null);
-        if (carrito == null) {
+        return guardarEnCarrito(carrito, servicioId, cantidad);
+    }
+
+    // Guardar reutilizando Carrito ya cargado para evitar doble SELECT
+    public ItemCarrito guardarEnCarrito(Carrito carrito, Long servicioId, int cantidad) {
+        if (carrito == null || carrito.getId() == null) {
             return null;
         }
 
@@ -53,7 +63,10 @@ public class ItemCarritoService {
 
         int cantidadValida = cantidad > 0 ? cantidad : 1;
 
-        Optional<ItemCarrito> itemExistente = itemCarritoRepository.findByCarrito_IdAndServicio_Id(carritoId, servicioId);
+        Optional<ItemCarrito> itemExistente = itemCarritoRepository.findByCarrito_IdAndServicio_Id(
+                carrito.getId(),
+                servicioId
+        );
         if (itemExistente.isPresent()) {
             ItemCarrito existente = itemExistente.get();
             existente.setCantidad(existente.getCantidad() + cantidadValida);
@@ -74,16 +87,35 @@ public class ItemCarritoService {
         if (existente == null) {
             return null;
         }
+        return actualizarExistente(existente, item);
+    }
 
-        if (item.getCantidad() > 0) {
-            existente.setCantidad(item.getCantidad());
+    public ItemCarrito actualizarExistente(ItemCarrito existente, ItemCarrito item) {
+        if (existente == null || item == null || item.getCantidad() <= 0) {
+            return null;
         }
 
+        existente.setCantidad(item.getCantidad());
+
         if (item.getServicio() != null && item.getServicio().getId() != null) {
-            Servicio servicio = servicioRepository.findById(item.getServicio().getId()).orElse(null);
+            Long nuevoServicioId = item.getServicio().getId();
+            Servicio servicio = servicioRepository.findById(nuevoServicioId).orElse(null);
             if (servicio == null) {
                 return null;
             }
+
+            if (existente.getCarrito() != null && existente.getCarrito().getId() != null) {
+                Optional<ItemCarrito> duplicadoEnCarrito = itemCarritoRepository
+                        .findByCarrito_IdAndServicio_Id(existente.getCarrito().getId(), nuevoServicioId);
+                if (duplicadoEnCarrito.isPresent()
+                        && !duplicadoEnCarrito.get().getId().equals(existente.getId())) {
+                    ItemCarrito destino = duplicadoEnCarrito.get();
+                    destino.setCantidad(destino.getCantidad() + existente.getCantidad());
+                    itemCarritoRepository.delete(existente);
+                    return itemCarritoRepository.save(destino);
+                }
+            }
+
             existente.setServicio(servicio);
         }
 
@@ -93,6 +125,13 @@ public class ItemCarritoService {
     // Eliminar
     public boolean eliminar(Long id) {
         ItemCarrito item = itemCarritoRepository.findById(id).orElse(null);
+        if (item == null) {
+            return false;
+        }
+        return eliminarExistente(item);
+    }
+
+    public boolean eliminarExistente(ItemCarrito item) {
         if (item == null) {
             return false;
         }

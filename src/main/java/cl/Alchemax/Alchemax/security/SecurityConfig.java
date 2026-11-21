@@ -154,7 +154,7 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/usuarios/login"
                         ).permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/api/auth/me", "/api/auth/refresh").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -167,6 +167,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/usuarios")
                                 .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/citas",
+                                "/api/citas/estado/**",
+                                "/api/citas/profesional",
+                                "/api/citas/profesional/**",
+                                "/api/citas/fecha",
+                                "/api/citas/fecha/**"
+                        ).hasAnyRole("ADMIN", "NUTRICIONISTA")
+                        .requestMatchers(HttpMethod.DELETE, "/api/citas/**")
+                                .hasAnyRole("ADMIN", "NUTRICIONISTA")
+                        .requestMatchers(HttpMethod.DELETE, "/api/compras/**")
+                                .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/items-carrito")
+                                .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/servicios/**", "/api/categorias/**")
                                 .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers(HttpMethod.PUT, "/api/servicios/**", "/api/categorias/**")

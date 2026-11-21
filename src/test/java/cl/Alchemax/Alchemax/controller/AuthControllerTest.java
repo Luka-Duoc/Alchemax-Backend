@@ -177,6 +177,27 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("camila@gmail.com"))
                 .andExpect(jsonPath("$.password").doesNotExist());
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(jwt().jwt(j -> j.subject("camila@gmail.com").claim("rol", "USUARIO"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.email").value("camila@gmail.com"));
+
+        // Usuario eliminado -> 401
+        when(usuarioService.findbyEmail("eliminado@gmail.com")).thenReturn(Optional.empty());
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(jwt().jwt(j -> j.subject("eliminado@gmail.com").claim("rol", "USUARIO"))))
+                .andExpect(status().isUnauthorized());
+
+        // Sesión con orig_iat mayor a 7 días -> 401
+        long haceOchoDias = java.time.Instant.now().minus(java.time.Duration.ofDays(8)).getEpochSecond();
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(jwt().jwt(j -> j
+                                .subject("camila@gmail.com")
+                                .claim("rol", "USUARIO")
+                                .claim("orig_iat", haceOchoDias))))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

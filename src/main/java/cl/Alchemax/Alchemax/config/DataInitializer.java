@@ -11,7 +11,10 @@ import cl.Alchemax.Alchemax.repository.ServicioRepository;
 import cl.Alchemax.Alchemax.repository.UsuarioRepository;
 import cl.Alchemax.Alchemax.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -19,6 +22,8 @@ import java.time.LocalDate;
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioService usuarioService;
@@ -31,6 +36,27 @@ public class DataInitializer implements CommandLineRunner {
         seedUsuarios();
         seedCategoriasYServicios();
         seedCitas();
+        normalizarCitasExistentes();
+    }
+
+    private void normalizarCitasExistentes() {
+        citaRepository.normalizarEstadosNulos();
+        citaRepository.limpiarSlotActivoCanceladas();
+
+        for (Cita c : citaRepository.findCitasPendientesDeNormalizar()) {
+            try {
+                c.sincronizarSlotActivo();
+                citaRepository.saveAndFlush(c);
+            } catch (DataIntegrityViolationException ex) {
+                log.warn(
+                        "Conflicto de horario duplicado detectado en cita legada ID={}; se marca como Cancelada para preservar unicidad.",
+                        c.getId()
+                );
+                c.setEstado(Cita.ESTADO_CANCELADA);
+                c.sincronizarSlotActivo();
+                citaRepository.saveAndFlush(c);
+            }
+        }
     }
 
     private void seedUsuarios() {

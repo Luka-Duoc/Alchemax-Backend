@@ -17,9 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -128,9 +130,34 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return usuarioService.findbyEmail(authentication.getName().trim().toLowerCase())
+        return usuarioService.findbyEmail(authentication.getName().trim().toLowerCase(Locale.ROOT))
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    @Operation(summary = "Renovar token JWT", description = "Emite un nuevo token JWT vigente para el usuario autenticado respetando la duración máxima de sesión.")
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Jwt currentJwt = authentication.getPrincipal() instanceof Jwt jwt ? jwt : null;
+
+        return usuarioService.findbyEmail(authentication.getName().trim().toLowerCase(Locale.ROOT))
+                .<ResponseEntity<?>>map(u -> {
+                    String nuevoToken = jwtService.renovarToken(u, currentJwt);
+                    return ResponseEntity.ok(AuthResponse.from(nuevoToken, u));
+                })
+                .orElseGet(() -> {
+                    ErrorResponse error = new ErrorResponse(
+                            "401",
+                            "No autorizado",
+                            "La cuenta asociada al token ya no se encuentra activa.",
+                            LocalDateTime.now()
+                    );
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+                });
     }
 
     @Operation(summary = "Actualizar perfil propio", description = "Permite al usuario autenticado actualizar sus propios datos y opcionalmente cambiar su contraseña.")
