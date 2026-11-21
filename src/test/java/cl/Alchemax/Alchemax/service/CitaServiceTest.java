@@ -118,11 +118,14 @@ class CitaServiceTest {
         pacienteReal.setNombre("Camila Soto");
         pacienteReal.setEmail("camila@gmail.com");
 
-        Usuario ref = new Usuario();
-        ref.setId(2L);
+        // Incluso si el cliente envía un objeto Usuario con nombre/email falsificados, debe resolver desde BD
+        Usuario refFalsificado = new Usuario();
+        refFalsificado.setId(2L);
+        refFalsificado.setNombre("Nombre Falso");
+        refFalsificado.setEmail("falso@gmail.com");
 
         Cita nueva = new Cita(null, LocalDate.of(2026, 12, 3), "11:00", "control", "Dra. Ana Pérez", "Programada");
-        nueva.setUsuario(ref);
+        nueva.setUsuario(refFalsificado);
         nueva.setPacienteEmail("suplantado@gmail.com");
 
         when(usuarioRepository.findById(2L)).thenReturn(Optional.of(pacienteReal));
@@ -130,8 +133,59 @@ class CitaServiceTest {
 
         Cita guardada = citaService.guardar(nueva);
 
+        assertSame(pacienteReal, guardada.getUsuario());
         assertEquals("camila@gmail.com", guardada.getPacienteEmail());
         assertEquals("Camila Soto", guardada.getPacienteNombre());
+    }
+
+    @Test
+    void guardarConUsuarioIdInexistenteDebeLimpiarReferenciaUsuarioParaEvitarErrorFK() {
+        Usuario refInexistente = new Usuario();
+        refInexistente.setId(999L);
+        refInexistente.setNombre("Inexistente");
+        refInexistente.setEmail("noexiste@gmail.com");
+
+        Cita nueva = new Cita(null, LocalDate.of(2026, 12, 4), "12:00", "control", "Dra. Ana Pérez", "Programada");
+        nueva.setUsuario(refInexistente);
+
+        when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
+        when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Cita guardada = citaService.guardar(nueva);
+
+        assertNull(guardada.getUsuario());
+    }
+
+    @Test
+    void actualizarExistenteConMismoUsuarioIdDebePreservarUsuarioHidratadoSinSobrescribirConStub() {
+        Usuario pacienteHidratado = new Usuario();
+        pacienteHidratado.setId(2L);
+        pacienteHidratado.setNombre("Camila Soto");
+        pacienteHidratado.setEmail("camila@gmail.com");
+        citaEjemplo.setUsuario(pacienteHidratado);
+
+        Usuario stubSoloId = new Usuario();
+        stubSoloId.setId(2L);
+
+        Cita cambios = new Cita(
+                null,
+                LocalDate.of(2026, 11, 26),
+                "11:30",
+                "control",
+                "Dra. Ana Pérez",
+                "Confirmada"
+        );
+        cambios.setUsuario(stubSoloId);
+
+        when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Cita actualizada = citaService.actualizarExistente(citaEjemplo, cambios);
+
+        assertNotNull(actualizada.getUsuario());
+        assertSame(pacienteHidratado, actualizada.getUsuario());
+        assertEquals("Camila Soto", actualizada.getUsuario().getNombre());
+        assertEquals("camila@gmail.com", actualizada.getUsuario().getEmail());
+        verify(usuarioRepository, never()).findById(any());
     }
 
     @Test

@@ -66,7 +66,7 @@ public class CarritoController {
             @PathVariable Long usuarioId,
             Authentication authentication
     ) {
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 usuarioId,
                 "No tienes permisos para acceder al carrito de otro usuario."
@@ -120,7 +120,7 @@ public class CarritoController {
             @RequestParam Long servicioId,
             @RequestParam(defaultValue = "1") int cantidad,
             Authentication authentication) {
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 usuarioId,
                 "No tienes permisos para modificar el carrito de otro usuario."
@@ -180,7 +180,7 @@ public class CarritoController {
             @PathVariable Long usuarioId,
             @RequestParam Long servicioId,
             Authentication authentication) {
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 usuarioId,
                 "No tienes permisos para modificar el carrito de otro usuario."
@@ -240,7 +240,7 @@ public class CarritoController {
             @PathVariable Long usuarioId,
             Authentication authentication
     ) {
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 usuarioId,
                 "No tienes permisos para vaciar el carrito de otro usuario."

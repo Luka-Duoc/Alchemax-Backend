@@ -25,13 +25,6 @@ public class JwtService {
     private final String issuer;
     private final Duration maxSessionAge;
 
-    public JwtService(
-            JwtEncoder jwtEncoder,
-            long expirationMinutes,
-            String issuer) {
-        this(jwtEncoder, expirationMinutes, issuer, 7L);
-    }
-
     @Autowired
     public JwtService(
             JwtEncoder jwtEncoder,

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -171,7 +172,7 @@ public class ItemCarritoController {
             return ResponseEntity.notFound().build();
         }
         Long ownerId = (carrito.getUsuario() != null) ? carrito.getUsuario().getId() : null;
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 ownerId,
                 "No tienes permisos para consultar los ítems del carrito de otro usuario."
@@ -234,13 +235,13 @@ public class ItemCarritoController {
         }
 
         Long ownerId = (carrito.getUsuario() != null) ? carrito.getUsuario().getId() : null;
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 ownerId,
                 "No tienes permisos para modificar el carrito de otro usuario."
         );
 
-        ItemCarrito item = itemCarritoService.guardar(carritoId, servicioId, cantidad);
+        ItemCarrito item = itemCarritoService.guardarEnCarrito(carrito, servicioId, cantidad);
         if (item == null) {
             ErrorResponse error = new ErrorResponse(
                     "400",
@@ -299,7 +300,7 @@ public class ItemCarritoController {
     )
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(
-            @RequestBody ItemCarrito item,
+            @Valid @RequestBody ItemCarrito item,
             @PathVariable Long id,
             Authentication authentication
     ) {

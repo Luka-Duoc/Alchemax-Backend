@@ -62,7 +62,7 @@ public class CompraController {
             @PathVariable Long usuarioId,
             Authentication authentication
     ) {
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 usuarioId,
                 "No tienes permisos para consultar el historial de compras de otro usuario."
@@ -112,7 +112,7 @@ public class CompraController {
             @RequestBody Compra c,
             Authentication authentication
     ) {
-        AccessControlHelper.verificarAccesoUsuario(
+        AccessControlHelper.verificarAccesoComercialUsuario(
                 authentication,
                 usuarioId,
                 "No tienes permisos para registrar compras en la cuenta de otro usuario."

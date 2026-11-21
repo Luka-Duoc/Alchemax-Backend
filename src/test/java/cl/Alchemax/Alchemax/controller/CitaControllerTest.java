@@ -263,6 +263,27 @@ class CitaControllerTest {
         ArgumentCaptor<Cita> captor = ArgumentCaptor.forClass(Cita.class);
         verify(citaService).actualizarExistente(eq(citaEjemplo), captor.capture());
         assertEquals(Cita.ESTADO_PROGRAMADA, captor.getValue().getEstado());
+
+        // Admin enviando stub {"usuario": {"id": 2}} preserva usuario hidratado en la respuesta
+        String bodyAdminMismoUsuario = """
+                {
+                  "fecha": "2026-11-25",
+                  "hora": "10:30",
+                  "tipo": "evaluacion",
+                  "profesional": "Dra. Ana Pérez",
+                  "estado": "Confirmada",
+                  "usuario": { "id": 2 }
+                }
+                """;
+
+        mockMvc.perform(put("/api/citas/1")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyAdminMismoUsuario))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.usuario.id").value(2))
+                .andExpect(jsonPath("$.usuario.nombre").value("Camila Soto"))
+                .andExpect(jsonPath("$.usuario.email").value("camila@gmail.com"));
     }
 
     @Test

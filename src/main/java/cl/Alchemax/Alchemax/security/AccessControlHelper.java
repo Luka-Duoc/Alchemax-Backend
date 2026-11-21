@@ -79,6 +79,28 @@ public final class AccessControlHelper {
         }
     }
 
+    /**
+     * Verifica de forma estricta que el usuario autenticado sea el titular del recurso comercial
+     * (carrito, ítems de carrito o compras) o posea rol ADMIN (excluyendo a NUTRICIONISTA).
+     */
+    public static boolean puedeAccederRecursoComercialUsuario(Authentication authentication, Long targetUsuarioId) {
+        if (authentication == null || targetUsuarioId == null) {
+            return false;
+        }
+        if (esAdmin(authentication)) {
+            return true;
+        }
+        return obtenerUsuarioIdDelToken(authentication)
+                .map(id -> id.equals(targetUsuarioId))
+                .orElse(false);
+    }
+
+    public static void verificarAccesoComercialUsuario(Authentication authentication, Long targetUsuarioId, String mensajeError) {
+        if (!puedeAccederRecursoComercialUsuario(authentication, targetUsuarioId)) {
+            throw new AccesoDenegadoException(mensajeError);
+        }
+    }
+
     public static void verificarAccesoCita(Authentication authentication, Cita cita, String mensajeError) {
         if (authentication == null || cita == null) {
             throw new AccesoDenegadoException(mensajeError);
@@ -96,13 +118,13 @@ public final class AccessControlHelper {
         if (authentication == null || item == null) {
             throw new AccesoDenegadoException(mensajeError);
         }
-        if (esAdminONutricionista(authentication)) {
+        if (esAdmin(authentication)) {
             return;
         }
         Long propietarioId = (item.getCarrito() != null && item.getCarrito().getUsuario() != null)
                 ? item.getCarrito().getUsuario().getId()
                 : null;
-        if (propietarioId == null || !puedeAccederRecursoUsuario(authentication, propietarioId)) {
+        if (propietarioId == null || !puedeAccederRecursoComercialUsuario(authentication, propietarioId)) {
             throw new AccesoDenegadoException(mensajeError);
         }
     }

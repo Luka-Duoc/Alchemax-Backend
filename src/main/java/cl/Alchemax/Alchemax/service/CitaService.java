@@ -119,15 +119,20 @@ public class CitaService {
         if (c.getPacienteEmail() != null) {
             citaExistente.setPacienteEmail(c.getPacienteEmail());
         }
-        if (c.getUsuario() != null) {
+        if (c.getUsuario() != null && c.getUsuario().getId() != null) {
             boolean mismoUsuarioYaHidratado = citaExistente.getUsuario() != null
                     && citaExistente.getUsuario().getId() != null
                     && citaExistente.getUsuario().getId().equals(c.getUsuario().getId())
                     && citaExistente.getUsuario().getEmail() != null;
-            citaExistente.setUsuario(c.getUsuario());
-            if (!mismoUsuarioYaHidratado) {
+            if (mismoUsuarioYaHidratado) {
+                citaExistente.setPacienteNombre(citaExistente.getUsuario().getNombre());
+                citaExistente.setPacienteEmail(citaExistente.getUsuario().getEmail());
+            } else {
+                citaExistente.setUsuario(c.getUsuario());
                 vincularUsuario(citaExistente);
             }
+        } else if (c.getUsuario() == null && c.getPacienteEmail() != null && !c.getPacienteEmail().isBlank()) {
+            vincularUsuario(citaExistente);
         }
 
         citaExistente.sincronizarSlotActivo();
@@ -203,10 +208,9 @@ public class CitaService {
 
         if (cita.getUsuario() != null && cita.getUsuario().getId() != null) {
             buscadoPorId = true;
-            if (cita.getUsuario().getEmail() != null && cita.getUsuario().getNombre() != null) {
-                resolved = cita.getUsuario();
-            } else {
-                resolved = usuarioRepository.findById(cita.getUsuario().getId()).orElse(null);
+            resolved = usuarioRepository.findById(cita.getUsuario().getId()).orElse(null);
+            if (resolved == null) {
+                cita.setUsuario(null);
             }
         } else if (cita.getPacienteEmail() != null && !cita.getPacienteEmail().isBlank()) {
             resolved = usuarioRepository

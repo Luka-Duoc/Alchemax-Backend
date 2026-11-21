@@ -115,13 +115,20 @@ class ItemCarritoControllerTest {
     void guardarDebeValidarPropiedadDelCarritoYRetornar201O400() throws Exception {
         when(itemCarritoService.obtenerCarrito(10L)).thenReturn(carritoEjemplo);
         when(itemCarritoService.obtenerCarrito(99L)).thenReturn(null);
-        when(itemCarritoService.guardar(10L, 20L, 2)).thenReturn(itemEjemplo);
+        when(itemCarritoService.guardarEnCarrito(carritoEjemplo, 20L, 2)).thenReturn(itemEjemplo);
 
         // Otro usuario no puede agregar ítems al carrito 10
         mockMvc.perform(post("/api/items-carrito/carrito/10")
                         .param("servicioId", "20")
                         .param("cantidad", "2")
                         .with(jwt().jwt(j -> j.claim("usuarioId", 55L))))
+                .andExpect(status().isForbidden());
+
+        // Nutricionista tampoco puede modificar el carrito comercial de un paciente -> 403
+        mockMvc.perform(post("/api/items-carrito/carrito/10")
+                        .param("servicioId", "20")
+                        .param("cantidad", "2")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_NUTRICIONISTA"))))
                 .andExpect(status().isForbidden());
 
         // Propietario -> 201

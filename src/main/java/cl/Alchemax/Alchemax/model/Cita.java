@@ -88,15 +88,11 @@ public class Cita {
     public Cita(Long id, LocalDate fecha, String hora, String tipo, String profesional, String estado) {
         this.id = id;
         this.fecha = fecha;
-        this.hora = normalizarHora(hora);
+        this.hora = hora;
         this.tipo = tipo;
         this.profesional = profesional;
-        setEstado(estado);
-    }
-
-    public void setEstado(String estado) {
         this.estado = estado;
-        sincronizarSlotActivo();
+        this.slotActivo = ESTADO_CANCELADA.equalsIgnoreCase(estado) ? null : 1;
     }
 
     @PrePersist

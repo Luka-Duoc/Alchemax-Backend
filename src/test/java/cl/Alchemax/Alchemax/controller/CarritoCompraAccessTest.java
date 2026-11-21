@@ -51,6 +51,12 @@ class CarritoCompraAccessTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value("403"));
 
+        // Nutricionista no tiene acceso al carrito comercial de un paciente -> 403
+        mockMvc.perform(get("/api/carrito/usuario/2")
+                        .with(jwt().authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_NUTRICIONISTA"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value("403"));
+
         // Propietario (usuarioId=2) -> 200
         mockMvc.perform(get("/api/carrito/usuario/2")
                         .with(jwt().jwt(j -> j.claim("usuarioId", 2L))))
