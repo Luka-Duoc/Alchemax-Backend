@@ -1,8 +1,12 @@
 package cl.Alchemax.Alchemax.security;
 
+import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
+import cl.Alchemax.Alchemax.model.Cita;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
+
+import java.util.Optional;
 
 public final class AccessControlHelper {
 
@@ -22,9 +26,27 @@ public final class AccessControlHelper {
         return false;
     }
 
+    public static Optional<Long> obtenerUsuarioIdDelToken(Authentication authentication) {
+        if (authentication == null) {
+            return Optional.empty();
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Jwt jwt) {
+            Object claimId = jwt.getClaim("usuarioId");
+            if (claimId != null) {
+                try {
+                    return Optional.of(Long.valueOf(claimId.toString()));
+                } catch (NumberFormatException e) {
+                    return Optional.empty();
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     /**
-     * Verifica que el usuario autenticado sea propietario del usuarioId solicitado
-     * o posea rol administrativo/clínico (ADMIN o NUTRICIONISTA).
+     * Verifica de forma estricta (fail-closed) que el usuario autenticado sea propietario
+     * del usuarioId solicitado o posea rol ADMIN / NUTRICIONISTA.
      */
     public static boolean puedeAccederRecursoUsuario(Authentication authentication, Long targetUsuarioId) {
         if (authentication == null || targetUsuarioId == null) {
@@ -33,21 +55,27 @@ public final class AccessControlHelper {
         if (esAdminONutricionista(authentication)) {
             return true;
         }
+        return obtenerUsuarioIdDelToken(authentication)
+                .map(id -> id.equals(targetUsuarioId))
+                .orElse(false);
+    }
 
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof Jwt jwt) {
-            Object claimId = jwt.getClaim("usuarioId");
-            if (claimId != null) {
-                try {
-                    Long tokenUserId = Long.valueOf(claimId.toString());
-                    return tokenUserId.equals(targetUsuarioId);
-                } catch (NumberFormatException e) {
-                    return false;
-                }
-            }
+    public static void verificarAccesoUsuario(Authentication authentication, Long targetUsuarioId, String mensajeError) {
+        if (!puedeAccederRecursoUsuario(authentication, targetUsuarioId)) {
+            throw new AccesoDenegadoException(mensajeError);
         }
+    }
 
-        // Compatibilidad con tokens de prueba MockMvc sin claim "usuarioId"
-        return true;
+    public static void verificarAccesoCita(Authentication authentication, Cita cita, String mensajeError) {
+        if (authentication == null || cita == null) {
+            throw new AccesoDenegadoException(mensajeError);
+        }
+        if (esAdminONutricionista(authentication)) {
+            return;
+        }
+        Long propietarioId = cita.getUsuario() != null ? cita.getUsuario().getId() : null;
+        if (propietarioId == null || !puedeAccederRecursoUsuario(authentication, propietarioId)) {
+            throw new AccesoDenegadoException(mensajeError);
+        }
     }
 }

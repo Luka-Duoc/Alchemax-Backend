@@ -167,6 +167,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/usuarios")
                                 .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/citas",
+                                "/api/citas/estado/**",
+                                "/api/citas/profesional",
+                                "/api/citas/profesional/**",
+                                "/api/citas/fecha",
+                                "/api/citas/fecha/**"
+                        ).hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers(HttpMethod.POST, "/api/servicios/**", "/api/categorias/**")
                                 .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers(HttpMethod.PUT, "/api/servicios/**", "/api/categorias/**")

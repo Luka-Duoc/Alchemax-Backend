@@ -1,7 +1,10 @@
 package cl.Alchemax.Alchemax.service;
 
+import cl.Alchemax.Alchemax.exception.HorarioNoDisponibleException;
 import cl.Alchemax.Alchemax.model.Cita;
+import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.repository.CitaRepository;
+import cl.Alchemax.Alchemax.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +25,9 @@ class CitaServiceTest {
 
     @Mock
     private CitaRepository citaRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @InjectMocks
     private CitaService citaService;
@@ -81,56 +87,99 @@ class CitaServiceTest {
     }
 
     @Test
-    void guardarDebeAsignarEstadoProgramadaPorDefectoSiVieneVacio() {
-        Cita nueva = new Cita(null, LocalDate.of(2026, 12, 1), "15:00", "control", "Dr. Carlos Soto", null);
+    void guardarDebeNormalizarHoraYAsignarEstadoProgramadaPorDefecto() {
+        Cita nueva = new Cita(null, LocalDate.of(2026, 12, 1), "9:05:00", "control", "Dr. Carlos Soto", null);
+        when(citaRepository.existeConflictoHorario("Dr. Carlos Soto", LocalDate.of(2026, 12, 1), "09:05", null))
+                .thenReturn(false);
         when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Cita guardada = citaService.guardar(nueva);
 
         assertEquals("Programada", guardada.getEstado());
+        assertEquals("09:05", guardada.getHora());
         verify(citaRepository).save(nueva);
     }
 
     @Test
-    void actualizarDebeModificarDatosCuandoCitaExiste() {
-        Cita datosNuevos = new Cita(
-                null,
-                LocalDate.of(2026, 12, 2),
-                "16:00",
-                "plan",
-                "Dra. María López",
-                "Completada"
-        );
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(citaEjemplo));
-        when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+    void guardarDebeLanzarHorarioNoDisponibleExceptionSiExisteConflicto() {
+        LocalDate fecha = LocalDate.of(2026, 11, 25);
+        Cita nueva = new Cita(null, fecha, "10:30:00", "evaluacion", "Dra. Ana Pérez", "Programada");
+        when(citaRepository.existeConflictoHorario("Dra. Ana Pérez", fecha, "10:30", null))
+                .thenReturn(true);
 
-        Cita actualizada = citaService.actualizar(datosNuevos, 1L);
-
-        assertNotNull(actualizada);
-        assertEquals(LocalDate.of(2026, 12, 2), actualizada.getFecha());
-        assertEquals("16:00", actualizada.getHora());
-        assertEquals("plan", actualizada.getTipo());
-        assertEquals("Dra. María López", actualizada.getProfesional());
-        assertEquals("Completada", actualizada.getEstado());
-    }
-
-    @Test
-    void actualizarDebeRetornarNullCuandoCitaNoExiste() {
-        when(citaRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertNull(citaService.actualizar(citaEjemplo, 99L));
+        assertThrows(HorarioNoDisponibleException.class, () -> citaService.guardar(nueva));
         verify(citaRepository, never()).save(any());
     }
 
     @Test
-    void cambiarEstadoDebeActualizarSoloElEstado() {
+    void guardarConUsuarioIdDebeSobrescribirPacienteEmailConElDelUsuarioReal() {
+        Usuario pacienteReal = new Usuario();
+        pacienteReal.setId(2L);
+        pacienteReal.setNombre("Camila Soto");
+        pacienteReal.setEmail("camila@gmail.com");
+
+        Usuario ref = new Usuario();
+        ref.setId(2L);
+
+        Cita nueva = new Cita(null, LocalDate.of(2026, 12, 3), "11:00", "control", "Dra. Ana Pérez", "Programada");
+        nueva.setUsuario(ref);
+        nueva.setPacienteEmail("suplantado@gmail.com");
+
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(pacienteReal));
+        when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Cita guardada = citaService.guardar(nueva);
+
+        assertEquals("camila@gmail.com", guardada.getPacienteEmail());
+        assertEquals("Camila Soto", guardada.getPacienteNombre());
+    }
+
+    @Test
+    void actualizarDebeModificarDatosYOmitirConflictoCuandoDestinoEsCancelada() {
+        Cita datosCancelacion = new Cita(
+                null,
+                LocalDate.of(2026, 11, 25),
+                "10:30",
+                "evaluacion",
+                "Dra. Ana Pérez",
+                "Cancelada"
+        );
         when(citaRepository.findById(1L)).thenReturn(Optional.of(citaEjemplo));
         when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Cita resultado = citaService.cambiarEstado(1L, "Cancelada");
+        Cita actualizada = citaService.actualizar(datosCancelacion, 1L);
 
-        assertNotNull(resultado);
-        assertEquals("Cancelada", resultado.getEstado());
+        assertNotNull(actualizada);
+        assertEquals("Cancelada", actualizada.getEstado());
+        // No debe consultar conflicto horario cuando se está cancelando
+        verify(citaRepository, never()).existeConflictoHorario(any(), any(), any(), any());
+    }
+
+    @Test
+    void actualizarDebeRetornarNullAntesDeConsultarConflictoCuandoCitaNoExiste() {
+        when(citaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertNull(citaService.actualizar(citaEjemplo, 99L));
+        verify(citaRepository, never()).existeConflictoHorario(any(), any(), any(), any());
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    void cambiarEstadoDeCanceladaAActivaDebeVerificarConflictoHorario() {
+        Cita citaCancelada = new Cita(
+                1L,
+                LocalDate.of(2026, 11, 25),
+                "10:30",
+                "evaluacion",
+                "Dra. Ana Pérez",
+                "Cancelada"
+        );
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(citaCancelada));
+        when(citaRepository.existeConflictoHorario("Dra. Ana Pérez", LocalDate.of(2026, 11, 25), "10:30", 1L))
+                .thenReturn(true);
+
+        assertThrows(HorarioNoDisponibleException.class, () -> citaService.cambiarEstado(1L, "Programada"));
+        verify(citaRepository, never()).save(any());
     }
 
     @Test
@@ -143,15 +192,5 @@ class CitaServiceTest {
 
         assertFalse(citaService.eliminar(99L));
         verify(citaRepository, never()).deleteById(99L);
-    }
-
-    @Test
-    void tieneConflictoHorarioDebeDetectarColisionDeProfesionalFechaYHora() {
-        LocalDate fecha = LocalDate.of(2026, 11, 25);
-        when(citaRepository.findByFecha(fecha)).thenReturn(List.of(citaEjemplo));
-
-        assertTrue(citaService.tieneConflictoHorario("Dra. Ana Pérez", fecha, "10:30", null));
-        assertFalse(citaService.tieneConflictoHorario("Dra. Ana Pérez", fecha, "10:30", 1L));
-        assertFalse(citaService.tieneConflictoHorario("Dra. Ana Pérez", fecha, "11:00", null));
     }
 }

@@ -4,16 +4,10 @@ import cl.Alchemax.Alchemax.model.Carrito;
 import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CarritoService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,43 +21,18 @@ public class CarritoController {
 
     @Operation(
             summary = "Obtiene el carrito por Usuario",
-            description = "Metodo que obtiene el carrito por id del usuario"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Carrito encontrado",
-            content = @Content(
-                    mediaType = "application/json",
-                    array = @ArraySchema(
-                            schema = @Schema(implementation = Carrito.class)
-                    )
-            )
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "Carrito no encontrado para el usuario especificado",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
+            description = "Método que obtiene el carrito por id del usuario"
     )
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<?> obtenerCarrito(
+    public ResponseEntity<Carrito> obtenerCarrito(
             @PathVariable Long usuarioId,
             Authentication authentication
     ) {
-        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("No tienes permisos para acceder al carrito de otro usuario.");
-        }
+        AccessControlHelper.verificarAccesoUsuario(
+                authentication,
+                usuarioId,
+                "No tienes permisos para acceder al carrito de otro usuario."
+        );
         Carrito carrito = carritoService.obtenerPorUsuario(usuarioId);
         if (carrito == null) {
             return ResponseEntity.notFound().build();
@@ -73,31 +42,7 @@ public class CarritoController {
 
     @Operation(
             summary = "Agrega el item al carrito",
-            description = "Agrega un servicio con una cantidad especifica al carrito"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Item agregado con éxito, se devuelve el carrito actualizado",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Carrito.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "Usuario o Item no válido",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
+            description = "Agrega un servicio con una cantidad específica al carrito"
     )
     @PostMapping("/usuario/{usuarioId}/agregar")
     public ResponseEntity<?> agregarItem(
@@ -105,10 +50,11 @@ public class CarritoController {
             @RequestParam Long servicioId,
             @RequestParam(defaultValue = "1") int cantidad,
             Authentication authentication) {
-        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("No tienes permisos para modificar el carrito de otro usuario.");
-        }
+        AccessControlHelper.verificarAccesoUsuario(
+                authentication,
+                usuarioId,
+                "No tienes permisos para modificar el carrito de otro usuario."
+        );
 
         Carrito carrito = carritoService.agregarItem(usuarioId, servicioId, cantidad);
         if (carrito == null) {
@@ -119,41 +65,18 @@ public class CarritoController {
 
     @Operation(
             summary = "Remover el item del carrito",
-            description = "Elimina un item especifico dwl carrito"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Item removido con éxito, devuelve carrito actualizado",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Carrito.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "Hubo un error al remover el item",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
+            description = "Elimina un item específico del carrito"
     )
     @DeleteMapping("/usuario/{usuarioId}/remover")
     public ResponseEntity<?> removerItem(
             @PathVariable Long usuarioId,
             @RequestParam Long servicioId,
             Authentication authentication) {
-        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("No tienes permisos para modificar el carrito de otro usuario.");
-        }
+        AccessControlHelper.verificarAccesoUsuario(
+                authentication,
+                usuarioId,
+                "No tienes permisos para modificar el carrito de otro usuario."
+        );
 
         Carrito carrito = carritoService.removerItem(usuarioId, servicioId);
         if (carrito == null) {
@@ -166,39 +89,17 @@ public class CarritoController {
             summary = "Vaciar carrito",
             description = "Elimina todos los items contenidos en el carrito del usuario"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Carrito vaciado con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Carrito.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "Carrito no encontrado",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
     @DeleteMapping("/usuario/{usuarioId}/vaciar")
     public ResponseEntity<?> vaciarCarrito(
             @PathVariable Long usuarioId,
             Authentication authentication
     ) {
-        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("No tienes permisos para vaciar el carrito de otro usuario.");
-        }
+        AccessControlHelper.verificarAccesoUsuario(
+                authentication,
+                usuarioId,
+                "No tienes permisos para vaciar el carrito de otro usuario."
+        );
+
         Carrito carrito = carritoService.vaciarCarrito(usuarioId);
         if (carrito == null) {
             return ResponseEntity.badRequest().body("Carrito no encontrado.");

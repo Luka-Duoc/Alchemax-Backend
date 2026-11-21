@@ -1,7 +1,9 @@
 package cl.Alchemax.Alchemax.controller;
 
+import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
 import cl.Alchemax.Alchemax.exception.ErrorResponse;
 import cl.Alchemax.Alchemax.model.Cita;
+import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CitaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,7 +42,7 @@ public class CitaController {
 
     @Operation(
             summary = "Listar todas las citas",
-            description = "Método que muestra una lista de todas las citas registradas"
+            description = "Método que muestra una lista de todas las citas registradas (solo ADMIN o NUTRICIONISTA)"
     )
     @ApiResponse(
             responseCode = "200",
@@ -50,14 +52,6 @@ public class CitaController {
                     array = @ArraySchema(
                             schema = @Schema(implementation = Cita.class)
                     )
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
             )
     )
     @GetMapping
@@ -69,60 +63,26 @@ public class CitaController {
             summary = "Buscar cita por ID",
             description = "Busca una cita registrada mediante su ID"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Cita encontrada con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Cita.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "El ID de la cita no se pudo encontrar",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+    public ResponseEntity<Cita> obtenerPorId(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
         Cita cita = citaService.buscarPorId(id);
         if (cita == null) {
             return ResponseEntity.notFound().build();
         }
+        AccessControlHelper.verificarAccesoCita(
+                authentication,
+                cita,
+                "No tienes permisos para consultar esta cita."
+        );
         return ResponseEntity.ok(cita);
     }
 
     @Operation(
             summary = "Listar citas por estado",
-            description = "Obtiene todas las citas filtradas por estado (Programada, Completada o Cancelada)"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Citas encontradas con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    array = @ArraySchema(
-                            schema = @Schema(implementation = Cita.class)
-                    )
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
+            description = "Obtiene todas las citas filtradas por estado"
     )
     @GetMapping("/estado/{estado}")
     public ResponseEntity<List<Cita>> listarPorEstado(@PathVariable String estado) {
@@ -133,24 +93,6 @@ public class CitaController {
             summary = "Listar citas por profesional",
             description = "Obtiene todas las citas asignadas a un profesional específico"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Citas encontradas con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    array = @ArraySchema(
-                            schema = @Schema(implementation = Cita.class)
-                    )
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
     @GetMapping("/profesional")
     public ResponseEntity<List<Cita>> listarPorProfesional(@RequestParam String profesional) {
         return ResponseEntity.ok(citaService.listarPorProfesional(profesional));
@@ -159,24 +101,6 @@ public class CitaController {
     @Operation(
             summary = "Listar citas por fecha",
             description = "Obtiene todas las citas programadas para una fecha específica"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Citas encontradas con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    array = @ArraySchema(
-                            schema = @Schema(implementation = Cita.class)
-                    )
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
     )
     @GetMapping("/fecha")
     public ResponseEntity<List<Cita>> listarPorFecha(@RequestParam LocalDate fecha) {
@@ -187,83 +111,48 @@ public class CitaController {
             summary = "Listar citas por usuario",
             description = "Obtiene todas las citas asociadas a un paciente por su ID de usuario"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Citas del usuario encontradas con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    array = @ArraySchema(
-                            schema = @Schema(implementation = Cita.class)
-                    )
-            )
-    )
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<?> listarPorUsuario(
+    public ResponseEntity<List<Cita>> listarPorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication
     ) {
-        if (!AccessControlHelper.puedeAccederRecursoUsuario(authentication, usuarioId)) {
-            ErrorResponse error = new ErrorResponse(
-                    "403",
-                    "Acceso denegado",
-                    "No tienes permisos para consultar las citas de otro usuario.",
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-        }
+        AccessControlHelper.verificarAccesoUsuario(
+                authentication,
+                usuarioId,
+                "No tienes permisos para consultar las citas de otro usuario."
+        );
         return ResponseEntity.ok(citaService.listarPorUsuario(usuarioId));
     }
 
     @Operation(
             summary = "Crear cita",
-            description = "Guarda una nueva cita en la base de datos"
-    )
-    @ApiResponse(
-            responseCode = "201",
-            description = "Cita guardada con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Cita.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "La cita no pudo ser creada o datos no válidos",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
+            description = "Guarda una nueva cita en la base de datos validando propiedad y disponibilidad horaria"
     )
     @PostMapping
-    public ResponseEntity<?> guardar(@Valid @RequestBody Cita c, Authentication authentication) {
-        if (c.getUsuario() != null
-                && c.getUsuario().getId() != null
-                && !AccessControlHelper.puedeAccederRecursoUsuario(authentication, c.getUsuario().getId())) {
-            ErrorResponse error = new ErrorResponse(
-                    "403",
-                    "Acceso denegado",
-                    "No puedes agendar citas a nombre de otro usuario.",
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-        }
+    public ResponseEntity<Cita> guardar(
+            @Valid @RequestBody Cita c,
+            Authentication authentication
+    ) {
+        if (!AccessControlHelper.esAdminONutricionista(authentication)) {
+            Long tokenUserId = AccessControlHelper.obtenerUsuarioIdDelToken(authentication)
+                    .orElseThrow(() -> new AccesoDenegadoException(
+                            "El token no contiene un identificador de usuario válido."
+                    ));
 
-        if (citaService.tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), null)) {
-            ErrorResponse error = new ErrorResponse(
-                    "409",
-                    "Horario no disponible",
-                    "El profesional seleccionado ya cuenta con una cita activa en esa fecha y hora.",
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            if (c.getUsuario() != null
+                    && c.getUsuario().getId() != null
+                    && !c.getUsuario().getId().equals(tokenUserId)) {
+                throw new AccesoDenegadoException(
+                        "No puedes agendar citas a nombre de otro usuario."
+                );
+            }
+
+            // Vincula estrictamente la cita al usuario del token, ignorando pacienteEmail externo
+            Usuario propietario = new Usuario();
+            propietario.setId(tokenUserId);
+            c.setUsuario(propietario);
+            c.setPacienteEmail(null);
+            c.setPacienteNombre(null);
         }
 
         Cita cita = citaService.guardar(c);
@@ -277,49 +166,29 @@ public class CitaController {
             summary = "Actualizar cita",
             description = "Busca el ID de la cita y actualiza su información correspondiente"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Cita actualizada con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Cita.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "Datos de la cita no válidos",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "El ID de la cita no se pudo encontrar",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@Valid @RequestBody Cita c, @PathVariable Long id) {
-        if (citaService.tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), id)) {
-            ErrorResponse error = new ErrorResponse(
-                    "409",
-                    "Horario no disponible",
-                    "El profesional seleccionado ya cuenta con una cita activa en esa fecha y hora.",
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    public ResponseEntity<Cita> actualizar(
+            @Valid @RequestBody Cita c,
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Cita existente = citaService.buscarPorId(id);
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
         }
+
+        AccessControlHelper.verificarAccesoCita(
+                authentication,
+                existente,
+                "No tienes permisos para modificar esta cita."
+        );
+
+        if (!AccessControlHelper.esAdminONutricionista(authentication)) {
+            c.setUsuario(existente.getUsuario());
+            c.setPacienteEmail(existente.getPacienteEmail());
+            c.setPacienteNombre(existente.getPacienteNombre());
+        }
+
         Cita cita = citaService.actualizar(c, id);
         if (cita == null) {
             return ResponseEntity.notFound().build();
@@ -329,42 +198,14 @@ public class CitaController {
 
     @Operation(
             summary = "Cambiar estado de la cita",
-            description = "Actualiza el estado de la cita identificada por su ID (Programada, Completada o Cancelada)"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Estado de la cita actualizado con éxito",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Cita.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "Estado no válido",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "El ID de la cita no se pudo encontrar",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
+            description = "Actualiza el estado de la cita identificada por su ID (Programada, Confirmada, Completada o Cancelada)"
     )
     @PutMapping("/{id}/estado")
-    public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {
+    public ResponseEntity<?> cambiarEstado(
+            @PathVariable Long id,
+            @RequestParam String estado,
+            Authentication authentication
+    ) {
         if (!ESTADOS_VALIDOS.contains(estado)) {
             ErrorResponse error = new ErrorResponse(
                     "400",
@@ -373,6 +214,24 @@ public class CitaController {
                     LocalDateTime.now()
             );
             return ResponseEntity.badRequest().body(error);
+        }
+
+        Cita existente = citaService.buscarPorId(id);
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        AccessControlHelper.verificarAccesoCita(
+                authentication,
+                existente,
+                "No tienes permisos para cambiar el estado de esta cita."
+        );
+
+        if (!AccessControlHelper.esAdminONutricionista(authentication)
+                && !"Cancelada".equals(estado)) {
+            throw new AccesoDenegadoException(
+                    "Un paciente solo puede cancelar sus propias citas."
+            );
         }
 
         Cita citaActualizada = citaService.cambiarEstado(id, estado);
@@ -386,29 +245,22 @@ public class CitaController {
             summary = "Eliminar cita",
             description = "Busca una cita por su ID y la elimina"
     )
-    @ApiResponse(
-            responseCode = "204",
-            description = "Cita eliminada con éxito",
-            content = @Content
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "El ID de la cita no se pudo encontrar",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminar(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Cita existente = citaService.buscarPorId(id);
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        AccessControlHelper.verificarAccesoCita(
+                authentication,
+                existente,
+                "No tienes permisos para eliminar esta cita."
+        );
+
         if (!citaService.eliminar(id)) {
             return ResponseEntity.notFound().build();
         }

@@ -1,17 +1,25 @@
 package cl.Alchemax.Alchemax.service;
 
+import cl.Alchemax.Alchemax.exception.HorarioNoDisponibleException;
 import cl.Alchemax.Alchemax.model.Cita;
 import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.repository.CitaRepository;
 import cl.Alchemax.Alchemax.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class CitaService {
+
+    private static final String ESTADO_CANCELADA = "Cancelada";
+    private static final String ESTADO_PROGRAMADA = "Programada";
+    private static final String MENSAJE_CONFLICTO_HORARIO =
+            "El profesional seleccionado ya cuenta con una cita activa en esa fecha y hora.";
 
     @Autowired
     private CitaRepository citaRepository;
@@ -49,60 +57,58 @@ public class CitaService {
         return citaRepository.findByUsuario_Id(usuarioId);
     }
 
-    // Validar disponibilidad de horario para un profesional
+    // Validar disponibilidad de horario en la base de datos
     public boolean tieneConflictoHorario(String profesional, LocalDate fecha, String hora, Long excluirCitaId) {
-        if (profesional == null || fecha == null || hora == null) {
+        if (profesional == null || profesional.isBlank() || fecha == null || hora == null || hora.isBlank()) {
             return false;
         }
         String profNormalizado = profesional.trim();
-        String horaNormalizada = hora.trim();
-
-        List<Cita> citasDelDia = citaRepository.findByFecha(fecha);
-        if (citasDelDia == null) {
-            return false;
-        }
-
-        for (Cita existente : citasDelDia) {
-            if (excluirCitaId != null && excluirCitaId.equals(existente.getId())) {
-                continue;
-            }
-            if ("Cancelada".equalsIgnoreCase(existente.getEstado())) {
-                continue;
-            }
-            if (existente.getProfesional() != null
-                    && existente.getHora() != null
-                    && existente.getProfesional().trim().equalsIgnoreCase(profNormalizado)
-                    && existente.getHora().trim().equals(horaNormalizada)) {
-                return true;
-            }
-        }
-        return false;
+        String horaNormalizada = Cita.normalizarHora(hora);
+        return citaRepository.existeConflictoHorario(profNormalizado, fecha, horaNormalizada, excluirCitaId);
     }
 
     // Guardar
+    @Transactional
     public Cita guardar(Cita c) {
         c.setId(null);
+        normalizarCampos(c);
         if (c.getEstado() == null || c.getEstado().isBlank()) {
-            c.setEstado("Programada");
+            c.setEstado(ESTADO_PROGRAMADA);
         }
+
+        if (!ESTADO_CANCELADA.equalsIgnoreCase(c.getEstado())
+                && tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), null)) {
+            throw new HorarioNoDisponibleException(MENSAJE_CONFLICTO_HORARIO);
+        }
+
         vincularUsuario(c);
         return citaRepository.save(c);
     }
 
     // Actualizar
+    @Transactional
     public Cita actualizar(Cita c, Long id) {
         Cita citaExistente = citaRepository.findById(id).orElse(null);
         if (citaExistente == null) {
             return null;
         }
 
+        normalizarCampos(c);
+        String estadoDestino = (c.getEstado() != null && !c.getEstado().isBlank())
+                ? c.getEstado()
+                : citaExistente.getEstado();
+
+        if (!ESTADO_CANCELADA.equalsIgnoreCase(estadoDestino)
+                && tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), id)) {
+            throw new HorarioNoDisponibleException(MENSAJE_CONFLICTO_HORARIO);
+        }
+
         citaExistente.setFecha(c.getFecha());
         citaExistente.setHora(c.getHora());
         citaExistente.setTipo(c.getTipo());
         citaExistente.setProfesional(c.getProfesional());
-        if (c.getEstado() != null && !c.getEstado().isBlank()) {
-            citaExistente.setEstado(c.getEstado());
-        }
+        citaExistente.setEstado(estadoDestino);
+
         if (c.getPacienteNombre() != null) {
             citaExistente.setPacienteNombre(c.getPacienteNombre());
         }
@@ -118,10 +124,23 @@ public class CitaService {
     }
 
     // Cambiar estado
+    @Transactional
     public Cita cambiarEstado(Long id, String estado) {
         Cita citaExistente = citaRepository.findById(id).orElse(null);
         if (citaExistente == null) {
             return null;
+        }
+
+        // Si una cita cancelada intenta reactivarse, verificar que el horario siga libre
+        if (ESTADO_CANCELADA.equalsIgnoreCase(citaExistente.getEstado())
+                && !ESTADO_CANCELADA.equalsIgnoreCase(estado)
+                && tieneConflictoHorario(
+                        citaExistente.getProfesional(),
+                        citaExistente.getFecha(),
+                        citaExistente.getHora(),
+                        id
+                )) {
+            throw new HorarioNoDisponibleException(MENSAJE_CONFLICTO_HORARIO);
         }
 
         citaExistente.setEstado(estado);
@@ -129,6 +148,7 @@ public class CitaService {
     }
 
     // Eliminar
+    @Transactional
     public boolean eliminar(Long id) {
         if (citaRepository.existsById(id)) {
             citaRepository.deleteById(id);
@@ -137,22 +157,39 @@ public class CitaService {
         return false;
     }
 
+    private void normalizarCampos(Cita cita) {
+        if (cita.getHora() != null) {
+            cita.setHora(Cita.normalizarHora(cita.getHora()));
+        }
+        if (cita.getProfesional() != null) {
+            cita.setProfesional(cita.getProfesional().trim());
+        }
+        if (cita.getTipo() != null) {
+            cita.setTipo(cita.getTipo().trim());
+        }
+    }
+
     private void vincularUsuario(Cita cita) {
         if (usuarioRepository == null) return;
 
         Usuario resolved = null;
+        boolean buscadoPorId = false;
+
         if (cita.getUsuario() != null && cita.getUsuario().getId() != null) {
+            buscadoPorId = true;
             resolved = usuarioRepository.findById(cita.getUsuario().getId()).orElse(null);
         } else if (cita.getPacienteEmail() != null && !cita.getPacienteEmail().isBlank()) {
-            resolved = usuarioRepository.findByEmail(cita.getPacienteEmail().trim().toLowerCase()).orElse(null);
+            resolved = usuarioRepository
+                    .findByEmailIgnoreCase(cita.getPacienteEmail().trim().toLowerCase(Locale.ROOT))
+                    .orElse(null);
         }
 
         if (resolved != null) {
             cita.setUsuario(resolved);
-            if (cita.getPacienteNombre() == null || cita.getPacienteNombre().isBlank()) {
+            if (buscadoPorId || cita.getPacienteNombre() == null || cita.getPacienteNombre().isBlank()) {
                 cita.setPacienteNombre(resolved.getNombre());
             }
-            if (cita.getPacienteEmail() == null || cita.getPacienteEmail().isBlank()) {
+            if (buscadoPorId || cita.getPacienteEmail() == null || cita.getPacienteEmail().isBlank()) {
                 cita.setPacienteEmail(resolved.getEmail());
             }
         }
