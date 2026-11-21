@@ -2,6 +2,7 @@ package cl.Alchemax.Alchemax.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -19,6 +20,7 @@ import java.util.List;
 public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "El nombre no puede estar vacio")

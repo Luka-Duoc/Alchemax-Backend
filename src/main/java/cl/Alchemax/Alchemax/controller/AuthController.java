@@ -2,6 +2,7 @@ package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.dto.AuthResponse;
 import cl.Alchemax.Alchemax.dto.LoginRequest;
+import cl.Alchemax.Alchemax.dto.RegisterRequest;
 import cl.Alchemax.Alchemax.dto.UpdateProfileRequest;
 import cl.Alchemax.Alchemax.exception.ErrorResponse;
 import cl.Alchemax.Alchemax.model.Rol;
@@ -9,6 +10,7 @@ import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.security.JwtService;
 import cl.Alchemax.Alchemax.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 @Tag(name = "Autenticación", description = "Endpoints para registro, inicio de sesión y perfil con JWT")
 @RestController
@@ -26,17 +29,23 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class AuthController {
+    private static final Set<String> GENEROS_VALIDOS = Set.of(
+            "hombre",
+            "masculino",
+            "mujer",
+            "femenino",
+            "otro",
+            "prefiero-no-decirlo"
+    );
+
     private final UsuarioService usuarioService;
     private final JwtService jwtService;
 
     @Operation(summary = "Registrar usuario", description = "Crea un nuevo usuario con rol paciente y contraseña encriptada, devolviendo su token JWT.")
+    @SecurityRequirements
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody Usuario usuario) {
-        String emailNormalizado = usuario.getEmail().trim().toLowerCase();
-        usuario.setEmail(emailNormalizado);
-        usuario.setNombre(usuario.getNombre().trim());
-        // Seguridad: todo registro público se crea estrictamente con rol usuario
-        usuario.setRol(Rol.usuario);
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        String emailNormalizado = request.getEmail().trim().toLowerCase();
 
         if (usuarioService.findbyEmail(emailNormalizado).isPresent()) {
             ErrorResponse error = new ErrorResponse(
@@ -48,8 +57,33 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
 
-        // UsuarioService.guardar encripta la contraseña con BCrypt una sola vez
-        Usuario guardado = usuarioService.guardar(usuario);
+        String generoRaw = request.getGenero() != null ? request.getGenero().trim().toLowerCase() : "";
+        if (generoRaw.isEmpty() || "string".equals(generoRaw)) {
+            generoRaw = "otro";
+        } else if (!GENEROS_VALIDOS.contains(generoRaw)) {
+            ErrorResponse error = new ErrorResponse(
+                    "400",
+                    "Género inválido",
+                    "El género debe ser masculino, femenino, otro o prefiero-no-decirlo.",
+                    LocalDateTime.now()
+            );
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        Usuario nuevo = new Usuario();
+        nuevo.setId(null);
+        nuevo.setNombre(request.getNombre().trim());
+        nuevo.setEmail(emailNormalizado);
+        nuevo.setPassword(request.getPassword());
+        nuevo.setGenero(generoRaw);
+        nuevo.setFechaNacimiento(
+                request.getFechaNacimiento() != null && !"string".equalsIgnoreCase(request.getFechaNacimiento().trim())
+                        ? request.getFechaNacimiento().trim()
+                        : null
+        );
+        nuevo.setRol(Rol.usuario);
+
+        Usuario guardado = usuarioService.guardar(nuevo);
         if (guardado == null) {
             ErrorResponse error = new ErrorResponse(
                     "409",
@@ -65,6 +99,7 @@ public class AuthController {
     }
 
     @Operation(summary = "Iniciar sesión", description = "Valida credenciales y devuelve el token JWT junto con los datos del usuario.")
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         String emailNormalizado = request.getEmail().trim().toLowerCase();
@@ -162,7 +197,6 @@ public class AuthController {
                 ? request.getObjetivoPrincipal()
                 : existente.getObjetivoPrincipal());
         cambios.setFotoPerfil(request.getFotoPerfil());
-        // Nunca permitir cambiar el propio rol desde /api/auth/me
         cambios.setRol(existente.getRol());
         if (request.getNuevaPassword() != null && !request.getNuevaPassword().isBlank()) {
             cambios.setPassword(request.getNuevaPassword());

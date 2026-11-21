@@ -33,6 +33,7 @@ public class UsuarioService {
 
     // Guardar
     public Usuario guardar(Usuario u) {
+        u.setId(null);
         String emailNormalizado = u.getEmail() != null ? u.getEmail().trim().toLowerCase() : "";
         u.setEmail(emailNormalizado);
 

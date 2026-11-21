@@ -78,6 +78,7 @@ class AuthControllerTest {
                 """;
 
         mockMvc.perform(post("/api/auth/register")
+                        .header("Authorization", "Bearer token_invalido_de_swagger")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -123,6 +124,7 @@ class AuthControllerTest {
                 """;
 
         mockMvc.perform(post("/api/auth/login")
+                        .header("Authorization", "Bearer token_expirado_o_malformado")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginOk))
                 .andExpect(status().isOk())
@@ -150,12 +152,13 @@ class AuthControllerTest {
                 {
                   "nombre": "",
                   "email": "correo-invalido",
-                  "genero": "invalido",
+                  "genero": "genero-no-permitido",
                   "password": ""
                 }
                 """;
 
         mockMvc.perform(post("/api/auth/register")
+                        .header("Authorization", "Bearer basura_en_swagger")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyInvalido))
                 .andExpect(status().isBadRequest())

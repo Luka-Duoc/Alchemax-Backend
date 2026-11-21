@@ -51,6 +51,7 @@ public class CitaService {
 
     // Guardar
     public Cita guardar(Cita c) {
+        c.setId(null);
         if (c.getEstado() == null || c.getEstado().isBlank()) {
             c.setEstado("Programada");
         }

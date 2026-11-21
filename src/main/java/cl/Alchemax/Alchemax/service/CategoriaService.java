@@ -20,6 +20,7 @@ public class CategoriaService {
 
     // Guardar
     public Categoria guardar(Categoria c) {
+        c.setId(null);
         return categoriaRepository.save(c);
     }
 

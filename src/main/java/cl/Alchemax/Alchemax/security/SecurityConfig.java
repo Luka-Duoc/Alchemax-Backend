@@ -18,6 +18,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -84,9 +86,54 @@ public class SecurityConfig {
     }
 
     @Bean
+    public BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
+        return request -> {
+            String path = request.getServletPath();
+            if (path == null || path.isEmpty()) {
+                path = request.getRequestURI();
+            }
+            if (path == null) {
+                path = "";
+            }
+            String method = request.getMethod() != null ? request.getMethod() : "";
+
+            // Ignorar cualquier header Authorization en endpoints públicos para evitar 401
+            // cuando Swagger UI o el navegador envían un token expirado o inválido.
+            if ("OPTIONS".equalsIgnoreCase(method)
+                    || path.startsWith("/api/auth/login")
+                    || path.startsWith("/api/auth/register")
+                    || path.startsWith("/api/usuarios/login")
+                    || path.startsWith("/swagger-ui")
+                    || path.startsWith("/v3/api-docs")
+                    || path.startsWith("/error")
+                    || ("GET".equalsIgnoreCase(method)
+                        && (path.startsWith("/api/servicios") || path.startsWith("/api/categorias")))) {
+                return null;
+            }
+
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null) {
+                String trimmed = authHeader.trim();
+                if (trimmed.regionMatches(true, 0, "Bearer ", 0, 7)) {
+                    String tokenPart = trimmed.substring(7).trim();
+                    // Si el usuario pegó "Bearer <token>" dentro del cuadro Authorize de Swagger
+                    if (tokenPart.regionMatches(true, 0, "Bearer ", 0, 7)) {
+                        tokenPart = tokenPart.substring(7).trim();
+                    }
+                    return tokenPart.isEmpty() ? null : tokenPart;
+                }
+            }
+
+            return defaultResolver.resolve(request);
+        };
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationConverter converter
+            JwtAuthenticationConverter converter,
+            BearerTokenResolver bearerTokenResolver
     ) throws Exception {
 
         http
@@ -104,7 +151,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/register",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/api/usuarios/login"
                         ).permitAll()
                         .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers(
@@ -128,6 +176,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth -> oauth
+                        .bearerTokenResolver(bearerTokenResolver)
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(converter)
                         )

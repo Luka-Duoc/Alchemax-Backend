@@ -20,6 +20,7 @@ public class ServicioService {
 
     //  Guardar
     public Servicio guardar(Servicio s) {
+        s.setId(null);
         return servicioRepository.save(s);
     }
 
