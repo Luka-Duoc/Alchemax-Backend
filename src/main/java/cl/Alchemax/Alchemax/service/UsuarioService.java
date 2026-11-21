@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +20,12 @@ public class UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    public static boolean isBcryptHash(String value) {
+        return value != null
+                && value.length() >= 59
+                && (value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$"));
+    }
+
     // Listar
     public List<Usuario> listar() {
         return usuarioRepository.findAll();
@@ -28,10 +36,12 @@ public class UsuarioService {
         String emailNormalizado = u.getEmail() != null ? u.getEmail().trim().toLowerCase() : "";
         u.setEmail(emailNormalizado);
 
-        if (usuarioRepository.findByEmail(emailNormalizado).isPresent()) {
+        if (usuarioRepository.findByEmailIgnoreCase(emailNormalizado).isPresent()) {
             return null;
         }
-        u.setPassword(passwordEncoder.encode(u.getPassword()));
+        if (!isBcryptHash(u.getPassword())) {
+            u.setPassword(passwordEncoder.encode(u.getPassword()));
+        }
         return usuarioRepository.save(u);
     }
 
@@ -52,7 +62,11 @@ public class UsuarioService {
             existente.setFotoPerfil(u.getFotoPerfil());
 
             if (u.getPassword() != null && !u.getPassword().isBlank()) {
-                existente.setPassword(passwordEncoder.encode(u.getPassword()));
+                if (!isBcryptHash(u.getPassword())) {
+                    existente.setPassword(passwordEncoder.encode(u.getPassword()));
+                } else {
+                    existente.setPassword(u.getPassword());
+                }
             }
 
             return usuarioRepository.save(existente);
@@ -64,10 +78,33 @@ public class UsuarioService {
         usuarioRepository.deleteById(id);
     }
 
+    public boolean verificarPassword(Usuario usuario, String rawPassword) {
+        if (usuario == null || rawPassword == null || usuario.getPassword() == null) {
+            return false;
+        }
+
+        String stored = usuario.getPassword();
+        if (isBcryptHash(stored)) {
+            return passwordEncoder.matches(rawPassword, stored);
+        }
+
+        // Compatibilidad con registros antiguos en BD guardados en texto plano:
+        // si coincide, migra automáticamente a BCrypt al iniciar sesión.
+        boolean matchesLegacy = MessageDigest.isEqual(
+                rawPassword.getBytes(StandardCharsets.UTF_8),
+                stored.getBytes(StandardCharsets.UTF_8)
+        );
+        if (matchesLegacy) {
+            usuario.setPassword(passwordEncoder.encode(rawPassword));
+            usuarioRepository.save(usuario);
+        }
+        return matchesLegacy;
+    }
+
     public Usuario login(String email, String password) {
         if (email == null || password == null) return null;
-        return usuarioRepository.findByEmail(email.trim().toLowerCase())
-                .filter(u -> passwordEncoder.matches(password, u.getPassword()))
+        return findbyEmail(email)
+                .filter(u -> verificarPassword(u, password))
                 .orElse(null);
     }
 
@@ -76,7 +113,7 @@ public class UsuarioService {
     }
 
     public Optional<Usuario> findbyEmail(String email) {
-        if (email == null) return Optional.empty();
-        return usuarioRepository.findByEmail(email.trim().toLowerCase());
+        if (email == null || email.isBlank()) return Optional.empty();
+        return usuarioRepository.findByEmailIgnoreCase(email.trim());
     }
 }

@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -28,7 +27,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthController {
     private final UsuarioService usuarioService;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     @Operation(summary = "Registrar usuario", description = "Crea un nuevo usuario con rol paciente y contraseña encriptada, devolviendo su token JWT.")
@@ -72,7 +70,7 @@ public class AuthController {
         String emailNormalizado = request.getEmail().trim().toLowerCase();
 
         return usuarioService.findbyEmail(emailNormalizado)
-                .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
+                .filter(u -> usuarioService.verificarPassword(u, request.getPassword()))
                 .<ResponseEntity<?>>map(u -> {
                     String token = jwtService.generarToken(u);
                     return ResponseEntity.ok(AuthResponse.from(token, u));
@@ -137,7 +135,7 @@ public class AuthController {
 
         if (request.getNuevaPassword() != null && !request.getNuevaPassword().isBlank()) {
             if (request.getPasswordActual() == null
-                    || !passwordEncoder.matches(request.getPasswordActual(), existente.getPassword())) {
+                    || !usuarioService.verificarPassword(existente, request.getPasswordActual())) {
                 ErrorResponse error = new ErrorResponse(
                         "400",
                         "Contraseña actual incorrecta",

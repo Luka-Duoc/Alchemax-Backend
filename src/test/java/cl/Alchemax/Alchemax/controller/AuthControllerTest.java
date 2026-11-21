@@ -112,6 +112,8 @@ class AuthControllerTest {
     @Test
     void loginDebeRetornarJwtConCredencialesValidasY401ConInvalidas() throws Exception {
         when(usuarioService.findbyEmail("camila@gmail.com")).thenReturn(Optional.of(usuarioGuardado));
+        when(usuarioService.verificarPassword(usuarioGuardado, "Str0ng#Pass99")).thenReturn(true);
+        when(usuarioService.verificarPassword(usuarioGuardado, "WrongPassword1!")).thenReturn(false);
 
         String loginOk = """
                 {
@@ -143,6 +145,24 @@ class AuthControllerTest {
     }
 
     @Test
+    void registerConDatosInvalidosDebeRetornar400YNo401() throws Exception {
+        String bodyInvalido = """
+                {
+                  "nombre": "",
+                  "email": "correo-invalido",
+                  "genero": "invalido",
+                  "password": ""
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyInvalido))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("400"));
+    }
+
+    @Test
     void meDebeRequerirJwtYRetornarPerfilSinPassword() throws Exception {
         when(usuarioService.findbyEmail("camila@gmail.com")).thenReturn(Optional.of(usuarioGuardado));
 
@@ -159,6 +179,7 @@ class AuthControllerTest {
     @Test
     void updateMeDebeActualizarPerfilYValidarPasswordActual() throws Exception {
         when(usuarioService.findbyEmail("camila@gmail.com")).thenReturn(Optional.of(usuarioGuardado));
+        when(usuarioService.verificarPassword(usuarioGuardado, "Incorrecta123!")).thenReturn(false);
         when(usuarioService.editar(any(Usuario.class), eq(1L))).thenAnswer(inv -> {
             Usuario cambios = inv.getArgument(0);
             usuarioGuardado.setNombre(cambios.getNombre());
