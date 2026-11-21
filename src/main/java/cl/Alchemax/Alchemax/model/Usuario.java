@@ -28,8 +28,9 @@ public class Usuario {
     @NotBlank(message = "La contraseña no puede estar vacio")
     private String password;
     private String fechaNacimiento;
-    @Pattern(regexp = "admin|usuario|nutricionista")
-    private String rol;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Rol rol = Rol.usuario;
     private Integer pesoActual;
     private String objetivoPrincipal;
 

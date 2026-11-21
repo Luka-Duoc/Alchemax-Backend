@@ -131,43 +131,6 @@ public class UsuarioController {
         return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
 
-    @Operation(
-            summary = "Iniciar sesion",
-            description = "Autentica a un usuario existente mediante su correo electrónico y contraseña"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Autenticación exitosa, devuelve los datos del usuario",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = Usuario.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "401",
-            description = "Credenciales incorrectas (correo o contraseña no válidos)",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno en el servidor",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
-            )
-    )
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Usuario u) {
-        Usuario usuario = usuarioService.login(u.getEmail(), u.getPassword());
-
-        if (usuario == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
-        }
-        return ResponseEntity.ok(usuario);
-    }
 
     @Operation(
             summary = "Eliminar Usuario",

@@ -3,15 +3,20 @@ package cl.Alchemax.Alchemax.service;
 import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     //Listar
     public List<Usuario> listar(){
@@ -20,20 +25,30 @@ public class UsuarioService {
 
     //Guardar
     public Usuario guardar(Usuario u) {
+        if (usuarioRepository.findByEmail(u.getEmail()).isPresent()) {
+            return null;
+        }
+        u.setPassword(passwordEncoder.encode(u.getPassword()));
         return usuarioRepository.save(u);
     }
 
     //Editar
     public Usuario editar(Usuario u, Long id) {
-        Usuario actualizar = usuarioRepository.findById(id).orElse(null);
-        if(actualizar == null) return null;
-        actualizar.setNombre(u.getNombre());
-        actualizar.setEmail(u.getEmail());
-        actualizar.setRol(u.getRol());
-        actualizar.setPesoActual(u.getPesoActual());
-        actualizar.setObjetivoPrincipal(u.getObjetivoPrincipal());
+        return usuarioRepository.findById(id).map(existente -> {
+            existente.setNombre(u.getNombre());
+            existente.setEmail(u.getEmail());
+            existente.setRol(u.getRol());
+            existente.setGenero(u.getGenero());
+            existente.setFechaNacimiento(u.getFechaNacimiento());
+            existente.setPesoActual(u.getPesoActual());
+            existente.setObjetivoPrincipal(u.getObjetivoPrincipal());
 
-        return usuarioRepository.save(actualizar);
+            if (u.getPassword() != null && !u.getPassword().isBlank()) {
+                existente.setPassword(passwordEncoder.encode(u.getPassword()));
+            }
+
+            return usuarioRepository.save(existente);
+        }).orElse(null);
     }
 
     //Eliminar
@@ -47,6 +62,10 @@ public class UsuarioService {
 
     public Usuario buscarPorId(Long id) {
         return usuarioRepository.findById(id).orElse(null);
+    }
+
+    public Optional<Usuario> findbyEmail(String email) {
+        return usuarioRepository.findByEmail(email);
     }
 
 }
