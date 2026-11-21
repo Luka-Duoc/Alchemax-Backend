@@ -1,5 +1,6 @@
 package cl.Alchemax.Alchemax.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class Categoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
     @NotBlank(message = "El nombre no puede estar vacio")
     private String nombre;

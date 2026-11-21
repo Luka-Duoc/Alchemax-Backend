@@ -92,6 +92,11 @@ class CitaControllerTest {
         mockMvc.perform(get("/api/citas/fecha").param("fecha", "2026-11-25").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1));
+
+        when(citaService.listarPorUsuario(10L)).thenReturn(List.of(citaEjemplo));
+        mockMvc.perform(get("/api/citas/usuario/10").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1));
     }
 
     @Test
@@ -166,6 +171,13 @@ class CitaControllerTest {
         Cita completada = new Cita(1L, LocalDate.of(2026, 11, 25), "10:30", "evaluacion", "Dra. Ana Pérez", "Completada");
         when(citaService.cambiarEstado(1L, "Completada")).thenReturn(completada);
         when(citaService.cambiarEstado(99L, "Completada")).thenReturn(null);
+
+        Cita confirmada = new Cita(1L, LocalDate.of(2026, 11, 25), "10:30", "evaluacion", "Dra. Ana Pérez", "Confirmada");
+        when(citaService.cambiarEstado(1L, "Confirmada")).thenReturn(confirmada);
+
+        mockMvc.perform(put("/api/citas/1/estado").param("estado", "Confirmada").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("Confirmada"));
 
         mockMvc.perform(put("/api/citas/1/estado").param("estado", "Completada").with(jwt()))
                 .andExpect(status().isOk())

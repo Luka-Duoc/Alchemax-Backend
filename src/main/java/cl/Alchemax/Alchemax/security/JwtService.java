@@ -28,6 +28,9 @@ public class JwtService {
     public String generarToken(Usuario usuario) {
         Instant ahora =  Instant.now();
 
+        cl.Alchemax.Alchemax.model.Rol rolEfectivo =
+                usuario.getRol() != null ? usuario.getRol() : cl.Alchemax.Alchemax.model.Rol.usuario;
+
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(issuer)
                 .issuedAt(ahora)
@@ -36,7 +39,7 @@ public class JwtService {
                 )
                 .subject(usuario.getEmail())
                 .claim("nombre", usuario.getNombre())
-                .claim("rol", usuario.getRol().name().toUpperCase())
+                .claim("rol", rolEfectivo.name().toUpperCase())
                 .build();
 
         JwsHeader header = JwsHeader

@@ -20,6 +20,7 @@ public class ServicioService {
 
     //  Guardar
     public Servicio guardar(Servicio s) {
+        s.setId(null);
         return servicioRepository.save(s);
     }
 
@@ -58,5 +59,14 @@ public class ServicioService {
     //Buscar por nombre
     public List<Servicio> buscarServicio(String nombre) {
         return servicioRepository.findByNombre(nombre);
+    }
+
+    //Eliminar
+    public boolean eliminar(Long id) {
+        if (servicioRepository.existsById(id)) {
+            servicioRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }

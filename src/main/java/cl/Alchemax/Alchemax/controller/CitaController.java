@@ -26,7 +26,12 @@ import java.util.Set;
 @CrossOrigin(origins = "http://localhost:5173")
 public class CitaController {
 
-    private static final Set<String> ESTADOS_VALIDOS = Set.of("Programada", "Completada", "Cancelada");
+    private static final Set<String> ESTADOS_VALIDOS = Set.of(
+            "Programada",
+            "Confirmada",
+            "Completada",
+            "Cancelada"
+    );
 
     @Autowired
     private CitaService citaService;
@@ -177,6 +182,25 @@ public class CitaController {
     }
 
     @Operation(
+            summary = "Listar citas por usuario",
+            description = "Obtiene todas las citas asociadas a un paciente por su ID de usuario"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Citas del usuario encontradas con éxito",
+            content = @Content(
+                    mediaType = "application/json",
+                    array = @ArraySchema(
+                            schema = @Schema(implementation = Cita.class)
+                    )
+            )
+    )
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<List<Cita>> listarPorUsuario(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(citaService.listarPorUsuario(usuarioId));
+    }
+
+    @Operation(
             summary = "Crear cita",
             description = "Guarda una nueva cita en la base de datos"
     )
@@ -300,7 +324,7 @@ public class CitaController {
             ErrorResponse error = new ErrorResponse(
                     "400",
                     "Estado no válido",
-                    "El estado debe ser Programada, Completada o Cancelada.",
+                    "El estado debe ser Programada, Confirmada, Completada o Cancelada.",
                     LocalDateTime.now()
             );
             return ResponseEntity.badRequest().body(error);

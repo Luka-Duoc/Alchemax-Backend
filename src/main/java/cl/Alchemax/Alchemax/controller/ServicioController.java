@@ -194,4 +194,16 @@ public class ServicioController {
         }
         return ResponseEntity.ok(servicioActualizado);
     }
+
+    @Operation(
+            summary = "Eliminar servicio",
+            description = "Busca un servicio por su ID y lo elimina"
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminar(@PathVariable Long id) {
+        if (!servicioService.eliminar(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.noContent().build();
+    }
 }

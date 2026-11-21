@@ -1,5 +1,6 @@
 package cl.Alchemax.Alchemax.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ import org.hibernate.action.internal.OrphanRemovalAction;
 public class Servicio {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
     @NotBlank(message = "El nombre del servicio no puede estar en blanco")
     private String nombre;

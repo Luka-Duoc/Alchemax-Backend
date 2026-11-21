@@ -1,5 +1,6 @@
 package cl.Alchemax.Alchemax.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 public class Compra {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
     private int servicio;
     private String nombre;

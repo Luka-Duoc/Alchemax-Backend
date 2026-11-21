@@ -1,7 +1,9 @@
 package cl.Alchemax.Alchemax.service;
 
 import cl.Alchemax.Alchemax.model.Cita;
+import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.repository.CitaRepository;
+import cl.Alchemax.Alchemax.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,9 @@ public class CitaService {
 
     @Autowired
     private CitaRepository citaRepository;
+
+    @Autowired(required = false)
+    private UsuarioRepository usuarioRepository;
 
     // Listar
     public List<Cita> listar() {
@@ -39,11 +44,18 @@ public class CitaService {
         return citaRepository.findByFecha(fecha);
     }
 
+    // Listar por usuario
+    public List<Cita> listarPorUsuario(Long usuarioId) {
+        return citaRepository.findByUsuario_Id(usuarioId);
+    }
+
     // Guardar
     public Cita guardar(Cita c) {
+        c.setId(null);
         if (c.getEstado() == null || c.getEstado().isBlank()) {
             c.setEstado("Programada");
         }
+        vincularUsuario(c);
         return citaRepository.save(c);
     }
 
@@ -60,6 +72,16 @@ public class CitaService {
         citaExistente.setProfesional(c.getProfesional());
         if (c.getEstado() != null && !c.getEstado().isBlank()) {
             citaExistente.setEstado(c.getEstado());
+        }
+        if (c.getPacienteNombre() != null) {
+            citaExistente.setPacienteNombre(c.getPacienteNombre());
+        }
+        if (c.getPacienteEmail() != null) {
+            citaExistente.setPacienteEmail(c.getPacienteEmail());
+        }
+        if (c.getUsuario() != null) {
+            citaExistente.setUsuario(c.getUsuario());
+            vincularUsuario(citaExistente);
         }
 
         return citaRepository.save(citaExistente);
@@ -83,5 +105,26 @@ public class CitaService {
             return true;
         }
         return false;
+    }
+
+    private void vincularUsuario(Cita cita) {
+        if (usuarioRepository == null) return;
+
+        Usuario resolved = null;
+        if (cita.getUsuario() != null && cita.getUsuario().getId() != null) {
+            resolved = usuarioRepository.findById(cita.getUsuario().getId()).orElse(null);
+        } else if (cita.getPacienteEmail() != null && !cita.getPacienteEmail().isBlank()) {
+            resolved = usuarioRepository.findByEmail(cita.getPacienteEmail().trim().toLowerCase()).orElse(null);
+        }
+
+        if (resolved != null) {
+            cita.setUsuario(resolved);
+            if (cita.getPacienteNombre() == null || cita.getPacienteNombre().isBlank()) {
+                cita.setPacienteNombre(resolved.getNombre());
+            }
+            if (cita.getPacienteEmail() == null || cita.getPacienteEmail().isBlank()) {
+                cita.setPacienteEmail(resolved.getEmail());
+            }
+        }
     }
 }

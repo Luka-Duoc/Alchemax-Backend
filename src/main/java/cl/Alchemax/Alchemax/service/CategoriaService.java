@@ -20,6 +20,7 @@ public class CategoriaService {
 
     // Guardar
     public Categoria guardar(Categoria c) {
+        c.setId(null);
         return categoriaRepository.save(c);
     }
 
@@ -30,6 +31,9 @@ public class CategoriaService {
 
         actualizar.setNombre(c.getNombre());
         actualizar.setDescripcion(c.getDescripcion());
+        if (c.getServiciosAsociados() != null) {
+            actualizar.setServiciosAsociados(c.getServiciosAsociados());
+        }
 
         return categoriaRepository.save(actualizar);
     }
