@@ -16,8 +16,6 @@ import java.util.Locale;
 @Service
 public class CitaService {
 
-    private static final String ESTADO_CANCELADA = "Cancelada";
-    private static final String ESTADO_PROGRAMADA = "Programada";
     private static final String MENSAJE_CONFLICTO_HORARIO =
             "El profesional seleccionado ya cuenta con una cita activa en esa fecha y hora.";
 
@@ -73,10 +71,11 @@ public class CitaService {
         c.setId(null);
         normalizarCampos(c);
         if (c.getEstado() == null || c.getEstado().isBlank()) {
-            c.setEstado(ESTADO_PROGRAMADA);
+            c.setEstado(Cita.ESTADO_PROGRAMADA);
         }
+        c.sincronizarSlotActivo();
 
-        if (!ESTADO_CANCELADA.equalsIgnoreCase(c.getEstado())
+        if (!Cita.ESTADO_CANCELADA.equalsIgnoreCase(c.getEstado())
                 && tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), null)) {
             throw new HorarioNoDisponibleException(MENSAJE_CONFLICTO_HORARIO);
         }
@@ -85,21 +84,26 @@ public class CitaService {
         return citaRepository.save(c);
     }
 
-    // Actualizar
+    // Actualizar (recibiendo ID)
     @Transactional
     public Cita actualizar(Cita c, Long id) {
         Cita citaExistente = citaRepository.findById(id).orElse(null);
         if (citaExistente == null) {
             return null;
         }
+        return actualizarExistente(citaExistente, c);
+    }
 
+    // Actualizar (recibiendo entidad ya cargada para evitar doble SELECT)
+    @Transactional
+    public Cita actualizarExistente(Cita citaExistente, Cita c) {
         normalizarCampos(c);
         String estadoDestino = (c.getEstado() != null && !c.getEstado().isBlank())
                 ? c.getEstado()
                 : citaExistente.getEstado();
 
-        if (!ESTADO_CANCELADA.equalsIgnoreCase(estadoDestino)
-                && tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), id)) {
+        if (!Cita.ESTADO_CANCELADA.equalsIgnoreCase(estadoDestino)
+                && tieneConflictoHorario(c.getProfesional(), c.getFecha(), c.getHora(), citaExistente.getId())) {
             throw new HorarioNoDisponibleException(MENSAJE_CONFLICTO_HORARIO);
         }
 
@@ -116,38 +120,50 @@ public class CitaService {
             citaExistente.setPacienteEmail(c.getPacienteEmail());
         }
         if (c.getUsuario() != null) {
+            boolean mismoUsuarioYaHidratado = citaExistente.getUsuario() != null
+                    && citaExistente.getUsuario().getId() != null
+                    && citaExistente.getUsuario().getId().equals(c.getUsuario().getId())
+                    && citaExistente.getUsuario().getEmail() != null;
             citaExistente.setUsuario(c.getUsuario());
-            vincularUsuario(citaExistente);
+            if (!mismoUsuarioYaHidratado) {
+                vincularUsuario(citaExistente);
+            }
         }
 
+        citaExistente.sincronizarSlotActivo();
         return citaRepository.save(citaExistente);
     }
 
-    // Cambiar estado
+    // Cambiar estado (por ID)
     @Transactional
     public Cita cambiarEstado(Long id, String estado) {
         Cita citaExistente = citaRepository.findById(id).orElse(null);
         if (citaExistente == null) {
             return null;
         }
+        return cambiarEstadoExistente(citaExistente, estado);
+    }
 
-        // Si una cita cancelada intenta reactivarse, verificar que el horario siga libre
-        if (ESTADO_CANCELADA.equalsIgnoreCase(citaExistente.getEstado())
-                && !ESTADO_CANCELADA.equalsIgnoreCase(estado)
+    // Cambiar estado (con entidad ya cargada para evitar doble SELECT)
+    @Transactional
+    public Cita cambiarEstadoExistente(Cita citaExistente, String estado) {
+        if (Cita.ESTADO_CANCELADA.equalsIgnoreCase(citaExistente.getEstado())
+                && !Cita.ESTADO_CANCELADA.equalsIgnoreCase(estado)
                 && tieneConflictoHorario(
                         citaExistente.getProfesional(),
                         citaExistente.getFecha(),
                         citaExistente.getHora(),
-                        id
+                        citaExistente.getId()
                 )) {
             throw new HorarioNoDisponibleException(MENSAJE_CONFLICTO_HORARIO);
         }
 
         citaExistente.setEstado(estado);
+        citaExistente.sincronizarSlotActivo();
         return citaRepository.save(citaExistente);
     }
 
-    // Eliminar
+    // Eliminar (por ID)
     @Transactional
     public boolean eliminar(Long id) {
         if (citaRepository.existsById(id)) {
@@ -155,6 +171,16 @@ public class CitaService {
             return true;
         }
         return false;
+    }
+
+    // Eliminar (con entidad ya cargada, 1 query en vez de 3)
+    @Transactional
+    public boolean eliminarExistente(Cita citaExistente) {
+        if (citaExistente == null) {
+            return false;
+        }
+        citaRepository.delete(citaExistente);
+        return true;
     }
 
     private void normalizarCampos(Cita cita) {
@@ -177,7 +203,11 @@ public class CitaService {
 
         if (cita.getUsuario() != null && cita.getUsuario().getId() != null) {
             buscadoPorId = true;
-            resolved = usuarioRepository.findById(cita.getUsuario().getId()).orElse(null);
+            if (cita.getUsuario().getEmail() != null && cita.getUsuario().getNombre() != null) {
+                resolved = cita.getUsuario();
+            } else {
+                resolved = usuarioRepository.findById(cita.getUsuario().getId()).orElse(null);
+            }
         } else if (cita.getPacienteEmail() != null && !cita.getPacienteEmail().isBlank()) {
             resolved = usuarioRepository
                     .findByEmailIgnoreCase(cita.getPacienteEmail().trim().toLowerCase(Locale.ROOT))

@@ -2,6 +2,7 @@ package cl.Alchemax.Alchemax.security;
 
 import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
 import cl.Alchemax.Alchemax.model.Cita;
+import cl.Alchemax.Alchemax.model.ItemCarrito;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -11,6 +12,18 @@ import java.util.Optional;
 public final class AccessControlHelper {
 
     private AccessControlHelper() {
+    }
+
+    public static boolean esAdmin(Authentication authentication) {
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return false;
+        }
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            if ("ROLE_ADMIN".equalsIgnoreCase(authority.getAuthority())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean esAdminONutricionista(Authentication authentication) {
@@ -74,6 +87,21 @@ public final class AccessControlHelper {
             return;
         }
         Long propietarioId = cita.getUsuario() != null ? cita.getUsuario().getId() : null;
+        if (propietarioId == null || !puedeAccederRecursoUsuario(authentication, propietarioId)) {
+            throw new AccesoDenegadoException(mensajeError);
+        }
+    }
+
+    public static void verificarAccesoItemCarrito(Authentication authentication, ItemCarrito item, String mensajeError) {
+        if (authentication == null || item == null) {
+            throw new AccesoDenegadoException(mensajeError);
+        }
+        if (esAdminONutricionista(authentication)) {
+            return;
+        }
+        Long propietarioId = (item.getCarrito() != null && item.getCarrito().getUsuario() != null)
+                ? item.getCarrito().getUsuario().getId()
+                : null;
         if (propietarioId == null || !puedeAccederRecursoUsuario(authentication, propietarioId)) {
             throw new AccesoDenegadoException(mensajeError);
         }

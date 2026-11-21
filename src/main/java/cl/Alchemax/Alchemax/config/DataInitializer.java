@@ -31,6 +31,32 @@ public class DataInitializer implements CommandLineRunner {
         seedUsuarios();
         seedCategoriasYServicios();
         seedCitas();
+        normalizarCitasExistentes();
+    }
+
+    private void normalizarCitasExistentes() {
+        for (Cita c : citaRepository.findAll()) {
+            String horaNormalizada = Cita.normalizarHora(c.getHora());
+            String estadoActual = c.getEstado();
+            boolean cambiado = false;
+            if (horaNormalizada != null && !horaNormalizada.equals(c.getHora())) {
+                c.setHora(horaNormalizada);
+                cambiado = true;
+            }
+            if (estadoActual == null || estadoActual.isBlank()) {
+                c.setEstado(Cita.ESTADO_PROGRAMADA);
+                cambiado = true;
+            }
+            Integer esperadoSlot = Cita.ESTADO_CANCELADA.equalsIgnoreCase(c.getEstado()) ? null : 1;
+            if ((esperadoSlot == null && c.getSlotActivo() != null)
+                    || (esperadoSlot != null && !esperadoSlot.equals(c.getSlotActivo()))) {
+                c.sincronizarSlotActivo();
+                cambiado = true;
+            }
+            if (cambiado) {
+                citaRepository.save(c);
+            }
+        }
     }
 
     private void seedUsuarios() {

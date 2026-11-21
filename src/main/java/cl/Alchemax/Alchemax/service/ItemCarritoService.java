@@ -34,6 +34,11 @@ public class ItemCarritoService {
         return itemCarritoRepository.findById(id).orElse(null);
     }
 
+    // Buscar carrito por ID para verificación de propiedad
+    public Carrito obtenerCarrito(Long carritoId) {
+        return carritoRepository.findById(carritoId).orElse(null);
+    }
+
     // Listar por carrito
     public List<ItemCarrito> listarPorCarrito(Long carritoId) {
         return itemCarritoRepository.findByCarrito_Id(carritoId);
@@ -74,6 +79,13 @@ public class ItemCarritoService {
         if (existente == null) {
             return null;
         }
+        return actualizarExistente(existente, item);
+    }
+
+    public ItemCarrito actualizarExistente(ItemCarrito existente, ItemCarrito item) {
+        if (existente == null) {
+            return null;
+        }
 
         if (item.getCantidad() > 0) {
             existente.setCantidad(item.getCantidad());
@@ -93,6 +105,13 @@ public class ItemCarritoService {
     // Eliminar
     public boolean eliminar(Long id) {
         ItemCarrito item = itemCarritoRepository.findById(id).orElse(null);
+        if (item == null) {
+            return false;
+        }
+        return eliminarExistente(item);
+    }
+
+    public boolean eliminarExistente(ItemCarrito item) {
         if (item == null) {
             return false;
         }

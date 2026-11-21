@@ -153,16 +153,16 @@ class CitaControllerTest {
     }
 
     @Test
-    void guardarDebeVincularAlUsuarioDelTokenEImpedirSuplantacionPorPacienteEmail() throws Exception {
+    void guardarDebeVincularAlUsuarioDelTokenEImpedirSuplantacionPorPacienteEmailOEstado() throws Exception {
         when(citaService.guardar(any(Cita.class))).thenReturn(citaEjemplo);
 
-        String bodyConEmailAjeno = """
+        String bodyConEmailYEstadoAjenos = """
                 {
                   "fecha": "2026-11-25",
                   "hora": "10:30",
                   "tipo": "evaluacion",
                   "profesional": "Dra. Ana Pérez",
-                  "estado": "Programada",
+                  "estado": "Confirmada",
                   "pacienteEmail": "victima@gmail.com"
                 }
                 """;
@@ -170,7 +170,7 @@ class CitaControllerTest {
         mockMvc.perform(post("/api/citas")
                         .with(jwt().jwt(j -> j.claim("rol", "USUARIO").claim("usuarioId", 2L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(bodyConEmailAjeno))
+                        .content(bodyConEmailYEstadoAjenos))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1));
 
@@ -180,6 +180,7 @@ class CitaControllerTest {
         assertNotNull(enviadaAlServicio.getUsuario());
         assertEquals(2L, enviadaAlServicio.getUsuario().getId());
         assertNull(enviadaAlServicio.getPacienteEmail());
+        assertEquals(Cita.ESTADO_PROGRAMADA, enviadaAlServicio.getEstado());
     }
 
     @Test
@@ -222,18 +223,18 @@ class CitaControllerTest {
     }
 
     @Test
-    void actualizarDebeVerificarExistenciaPrimeroYValidarPropiedad() throws Exception {
+    void actualizarDebeVerificarExistenciaPrimeroValidarPropiedadEPreservarEstadoParaPacientes() throws Exception {
         when(citaService.buscarPorId(1L)).thenReturn(citaEjemplo);
         when(citaService.buscarPorId(99L)).thenReturn(null);
-        when(citaService.actualizar(any(Cita.class), eq(1L))).thenReturn(citaEjemplo);
+        when(citaService.actualizarExistente(eq(citaEjemplo), any(Cita.class))).thenReturn(citaEjemplo);
 
-        String body = """
+        String bodyConIntentoDeAutoconfirmar = """
                 {
                   "fecha": "2026-11-25",
                   "hora": "10:30",
                   "tipo": "evaluacion",
                   "profesional": "Dra. Ana Pérez",
-                  "estado": "Programada"
+                  "estado": "Completada"
                 }
                 """;
 
@@ -241,23 +242,27 @@ class CitaControllerTest {
         mockMvc.perform(put("/api/citas/99")
                         .with(jwt().jwt(j -> j.claim("usuarioId", 2L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(bodyConIntentoDeAutoconfirmar))
                 .andExpect(status().isNotFound());
 
         // Otro paciente -> 403
         mockMvc.perform(put("/api/citas/1")
                         .with(jwt().jwt(j -> j.claim("usuarioId", 77L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(bodyConIntentoDeAutoconfirmar))
                 .andExpect(status().isForbidden());
 
-        // Propietario -> 200
+        // Propietario -> 200, pero el estado enviado ("Completada") se ignora y preserva "Programada"
         mockMvc.perform(put("/api/citas/1")
                         .with(jwt().jwt(j -> j.claim("usuarioId", 2L)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(bodyConIntentoDeAutoconfirmar))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
+
+        ArgumentCaptor<Cita> captor = ArgumentCaptor.forClass(Cita.class);
+        verify(citaService).actualizarExistente(eq(citaEjemplo), captor.capture());
+        assertEquals(Cita.ESTADO_PROGRAMADA, captor.getValue().getEstado());
     }
 
     @Test
@@ -267,8 +272,8 @@ class CitaControllerTest {
 
         when(citaService.buscarPorId(1L)).thenReturn(citaEjemplo);
         when(citaService.buscarPorId(99L)).thenReturn(null);
-        when(citaService.cambiarEstado(1L, "Confirmada")).thenReturn(confirmada);
-        when(citaService.cambiarEstado(1L, "Cancelada")).thenReturn(cancelada);
+        when(citaService.cambiarEstadoExistente(citaEjemplo, "Confirmada")).thenReturn(confirmada);
+        when(citaService.cambiarEstadoExistente(citaEjemplo, "Cancelada")).thenReturn(cancelada);
 
         // Paciente propietario puede cancelar su cita
         mockMvc.perform(put("/api/citas/1/estado").param("estado", "Cancelada")
@@ -293,21 +298,25 @@ class CitaControllerTest {
     }
 
     @Test
-    void eliminarDebeValidarPropiedadYExistencia() throws Exception {
+    void eliminarDebeRequerirRolStaffYValidarExistencia() throws Exception {
         when(citaService.buscarPorId(1L)).thenReturn(citaEjemplo);
         when(citaService.buscarPorId(99L)).thenReturn(null);
-        when(citaService.eliminar(1L)).thenReturn(true);
+        when(citaService.eliminarExistente(citaEjemplo)).thenReturn(true);
 
+        // Un paciente (incluso propietario) no puede hacer hard-DELETE de una cita -> 403
         mockMvc.perform(delete("/api/citas/1")
-                        .with(jwt().jwt(j -> j.claim("usuarioId", 88L))))
+                        .with(jwt()
+                                .jwt(j -> j.claim("rol", "USUARIO").claim("usuarioId", 2L))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USUARIO"))))
                 .andExpect(status().isForbidden());
 
+        // Personal clínico/administrativo sí puede eliminar -> 204
         mockMvc.perform(delete("/api/citas/1")
-                        .with(jwt().jwt(j -> j.claim("usuarioId", 2L))))
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_NUTRICIONISTA"))))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(delete("/api/citas/99")
-                        .with(jwt().jwt(j -> j.claim("usuarioId", 2L))))
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
                 .andExpect(status().isNotFound());
     }
 }

@@ -1,5 +1,6 @@
 package cl.Alchemax.Alchemax.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -11,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -20,9 +22,28 @@ import java.time.LocalDate;
         name = "cita",
         indexes = {
                 @Index(name = "idx_cita_fecha_prof_hora", columnList = "fecha, profesional, hora")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_cita_slot_activo",
+                        columnNames = {"fecha", "profesional", "hora", "slot_activo"}
+                )
         }
 )
 public class Cita {
+
+    public static final String ESTADO_PROGRAMADA = "Programada";
+    public static final String ESTADO_CONFIRMADA = "Confirmada";
+    public static final String ESTADO_COMPLETADA = "Completada";
+    public static final String ESTADO_CANCELADA = "Cancelada";
+    public static final String ESTADOS_REGEX = "Programada|Confirmada|Completada|Cancelada";
+    public static final Set<String> ESTADOS_VALIDOS = Set.of(
+            ESTADO_PROGRAMADA,
+            ESTADO_CONFIRMADA,
+            ESTADO_COMPLETADA,
+            ESTADO_CANCELADA
+    );
+
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
@@ -44,8 +65,17 @@ public class Cita {
     @NotBlank(message = "El profesional es obligatorio")
     private String profesional;
 
-    @Pattern(regexp = "Programada|Confirmada|Completada|Cancelada")
+    @Pattern(regexp = ESTADOS_REGEX)
     private String estado;
+
+    /**
+     * Validador de unicidad en base de datos para citas activas:
+     * vale 1 cuando la cita está activa y NULL cuando está Cancelada
+     * (en SQL, múltiples NULL no colisionan en un índice UNIQUE).
+     */
+    @JsonIgnore
+    @Column(name = "slot_activo")
+    private Integer slotActivo = 1;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id")
@@ -61,7 +91,25 @@ public class Cita {
         this.hora = normalizarHora(hora);
         this.tipo = tipo;
         this.profesional = profesional;
+        setEstado(estado);
+    }
+
+    public void setEstado(String estado) {
         this.estado = estado;
+        sincronizarSlotActivo();
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void sincronizarSlotActivo() {
+        this.hora = normalizarHora(this.hora);
+        if (this.profesional != null) {
+            this.profesional = this.profesional.trim();
+        }
+        if (this.estado == null || this.estado.isBlank()) {
+            this.estado = ESTADO_PROGRAMADA;
+        }
+        this.slotActivo = ESTADO_CANCELADA.equalsIgnoreCase(this.estado) ? null : 1;
     }
 
     public static String normalizarHora(String rawHora) {

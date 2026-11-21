@@ -59,7 +59,7 @@ class CarritoCompraAccessTest {
     }
 
     @Test
-    void comprasDebeRechazarAccesoDeOtroUsuarioYPermitirAlPropietario() throws Exception {
+    void comprasDebeRechazarAccesoDeOtroUsuarioPermitirAlPropietarioYRestringirDeleteAAdmin() throws Exception {
         Compra compra = new Compra();
         compra.setId(5L);
         compra.setNombre("Plan Deportivo");
@@ -74,5 +74,16 @@ class CarritoCompraAccessTest {
                         .with(jwt().jwt(j -> j.claim("usuarioId", 2L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(5));
+
+        // Un paciente no puede eliminar registros de compras -> 403
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/compras/5")
+                        .with(jwt().jwt(j -> j.claim("usuarioId", 2L))
+                                .authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USUARIO"))))
+                .andExpect(status().isForbidden());
+
+        // Un administrador sí puede eliminar registros de compras -> 204
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/compras/5")
+                        .with(jwt().authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isNoContent());
     }
 }

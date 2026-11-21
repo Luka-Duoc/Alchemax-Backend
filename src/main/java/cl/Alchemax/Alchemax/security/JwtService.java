@@ -3,6 +3,9 @@ package cl.Alchemax.Alchemax.security;
 import cl.Alchemax.Alchemax.exception.SesionExpiradaException;
 import cl.Alchemax.Alchemax.model.Rol;
 import cl.Alchemax.Alchemax.model.Usuario;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
@@ -15,19 +18,30 @@ import java.util.Locale;
 @Service
 public class JwtService {
 
-    private static final Duration MAX_SESSION_AGE = Duration.ofDays(7);
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     private final JwtEncoder jwtEncoder;
     private final long expirationMinutes;
     private final String issuer;
+    private final Duration maxSessionAge;
 
     public JwtService(
             JwtEncoder jwtEncoder,
+            long expirationMinutes,
+            String issuer) {
+        this(jwtEncoder, expirationMinutes, issuer, 7L);
+    }
+
+    @Autowired
+    public JwtService(
+            JwtEncoder jwtEncoder,
             @Value("${app.jwt.expiration.minutes}") long expirationMinutes,
-            @Value("${app.jwt.issuer}") String issuer) {
+            @Value("${app.jwt.issuer}") String issuer,
+            @Value("${app.jwt.max-session-days:7}") long maxSessionDays) {
         this.jwtEncoder = jwtEncoder;
         this.expirationMinutes = expirationMinutes;
         this.issuer = issuer;
+        this.maxSessionAge = Duration.ofDays(maxSessionDays > 0 ? maxSessionDays : 7L);
     }
 
     public String generarToken(Usuario usuario) {
@@ -53,7 +67,7 @@ public class JwtService {
         }
 
         Instant inicioSesion = Instant.ofEpochSecond(origIatEpoch);
-        if (Duration.between(inicioSesion, ahora).compareTo(MAX_SESSION_AGE) > 0) {
+        if (Duration.between(inicioSesion, ahora).compareTo(maxSessionAge) > 0) {
             throw new SesionExpiradaException(
                     "El tiempo máximo de la sesión ha expirado. Inicia sesión nuevamente."
             );
@@ -64,7 +78,8 @@ public class JwtService {
 
     private String emitirToken(Usuario usuario, Instant ahora, long origIatEpoch) {
         if (usuario.getId() == null) {
-            throw new IllegalArgumentException(
+            log.warn("Intento de emisión de JWT para un usuario sin ID persistido: {}", usuario.getEmail());
+            throw new IllegalStateException(
                     "El usuario debe tener un ID persistido para emitir un token JWT."
             );
         }

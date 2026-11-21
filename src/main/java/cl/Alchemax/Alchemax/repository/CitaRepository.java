@@ -22,9 +22,9 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     @Query("""
         select count(c) > 0 from Cita c
         where c.fecha = :fecha
+          and c.profesional = :profesional
           and c.hora = :hora
-          and lower(trim(c.profesional)) = lower(trim(:profesional))
-          and c.estado <> 'Cancelada'
+          and (c.estado is null or c.estado <> 'Cancelada')
           and (:excluirId is null or c.id <> :excluirId)
     """)
     boolean existeConflictoHorario(

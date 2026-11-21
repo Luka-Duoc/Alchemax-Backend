@@ -175,6 +175,12 @@ public class SecurityConfig {
                                 "/api/citas/fecha",
                                 "/api/citas/fecha/**"
                         ).hasAnyRole("ADMIN", "NUTRICIONISTA")
+                        .requestMatchers(HttpMethod.DELETE, "/api/citas/**")
+                                .hasAnyRole("ADMIN", "NUTRICIONISTA")
+                        .requestMatchers(HttpMethod.DELETE, "/api/compras/**")
+                                .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/items-carrito")
+                                .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/servicios/**", "/api/categorias/**")
                                 .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers(HttpMethod.PUT, "/api/servicios/**", "/api/categorias/**")
