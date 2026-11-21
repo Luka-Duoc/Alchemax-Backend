@@ -2,11 +2,13 @@ package cl.Alchemax.Alchemax.config;
 
 import cl.Alchemax.Alchemax.model.Categoria;
 import cl.Alchemax.Alchemax.model.Cita;
+import cl.Alchemax.Alchemax.model.Compra;
 import cl.Alchemax.Alchemax.model.Rol;
 import cl.Alchemax.Alchemax.model.Servicio;
 import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.repository.CategoriaRepository;
 import cl.Alchemax.Alchemax.repository.CitaRepository;
+import cl.Alchemax.Alchemax.repository.CompraRepository;
 import cl.Alchemax.Alchemax.repository.ServicioRepository;
 import cl.Alchemax.Alchemax.repository.UsuarioRepository;
 import cl.Alchemax.Alchemax.service.UsuarioService;
@@ -18,6 +20,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -30,12 +33,14 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoriaRepository categoriaRepository;
     private final ServicioRepository servicioRepository;
     private final CitaRepository citaRepository;
+    private final CompraRepository compraRepository;
 
     @Override
     public void run(String... args) {
         seedUsuarios();
         seedCategoriasYServicios();
         seedCitas();
+        seedCompras();
         normalizarCitasExistentes();
     }
 
@@ -184,5 +189,68 @@ public class DataInitializer implements CommandLineRunner {
             c2.setPacienteEmail(paciente.getEmail());
         }
         citaRepository.save(c2);
+    }
+
+    private void seedCompras() {
+        if (compraRepository.count() > 0) return;
+
+        Usuario paciente = usuarioRepository.findByEmail("camila.soto@gmail.com").orElse(null);
+        if (paciente == null) return;
+
+        List<Servicio> servicios = servicioRepository.findAll();
+        int idEval = buscarServicioIdPorNombre(servicios, "Evaluación Biométrica Inicial", 1);
+        int idDeportivo = buscarServicioIdPorNombre(servicios, "Plan Nutricional Deportivo", 2);
+        int idControl = buscarServicioIdPorNombre(servicios, "Control Telemedicina", 3);
+        int idClinico = buscarServicioIdPorNombre(servicios, "Plan Nutricional Clínico", 4);
+
+        LocalDate hoy = LocalDate.now();
+
+        compraRepository.save(new Compra(
+                null,
+                idDeportivo,
+                "Plan Nutricional Deportivo",
+                hoy.minusDays(1),
+                120000,
+                Compra.ESTADO_ACTIVO,
+                paciente
+        ));
+
+        compraRepository.save(new Compra(
+                null,
+                idEval,
+                "Evaluación Biométrica Inicial",
+                hoy.minusDays(4),
+                35000,
+                Compra.ESTADO_COMPLETADO,
+                paciente
+        ));
+
+        compraRepository.save(new Compra(
+                null,
+                idControl,
+                "Control Telemedicina",
+                hoy.minusDays(14),
+                25000,
+                Compra.ESTADO_COMPLETADO,
+                paciente
+        ));
+
+        compraRepository.save(new Compra(
+                null,
+                idClinico,
+                "Plan Nutricional Clínico",
+                hoy.minusDays(40),
+                85000,
+                Compra.ESTADO_COMPLETADO,
+                paciente
+        ));
+    }
+
+    private int buscarServicioIdPorNombre(List<Servicio> servicios, String nombreBuscado, int fallbackId) {
+        return servicios.stream()
+                .filter(s -> s.getNombre() != null && s.getNombre().equalsIgnoreCase(nombreBuscado) && s.getId() != null)
+                .map(s -> s.getId().intValue())
+                .findFirst()
+                .orElse(fallbackId);
     }
 }

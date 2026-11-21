@@ -21,7 +21,8 @@ import java.util.Set;
 @Table(
         name = "cita",
         indexes = {
-                @Index(name = "idx_cita_fecha_prof_hora", columnList = "fecha, profesional, hora")
+                @Index(name = "idx_cita_fecha_prof_hora", columnList = "fecha, profesional, hora"),
+                @Index(name = "idx_cita_fecha", columnList = "fecha")
         },
         uniqueConstraints = {
                 @UniqueConstraint(
