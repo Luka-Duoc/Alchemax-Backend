@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @Tag(name = "Usuarios", description = "Controlador para el CRUD de usuarios")
-@CrossOrigin(origins = "http://localhost:5173/Alchemax/")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
 

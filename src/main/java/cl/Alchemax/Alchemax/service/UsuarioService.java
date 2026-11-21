@@ -18,30 +18,38 @@ public class UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    //Listar
-    public List<Usuario> listar(){
+    // Listar
+    public List<Usuario> listar() {
         return usuarioRepository.findAll();
     }
 
-    //Guardar
+    // Guardar
     public Usuario guardar(Usuario u) {
-        if (usuarioRepository.findByEmail(u.getEmail()).isPresent()) {
+        String emailNormalizado = u.getEmail() != null ? u.getEmail().trim().toLowerCase() : "";
+        u.setEmail(emailNormalizado);
+
+        if (usuarioRepository.findByEmail(emailNormalizado).isPresent()) {
             return null;
         }
         u.setPassword(passwordEncoder.encode(u.getPassword()));
         return usuarioRepository.save(u);
     }
 
-    //Editar
+    // Editar
     public Usuario editar(Usuario u, Long id) {
         return usuarioRepository.findById(id).map(existente -> {
             existente.setNombre(u.getNombre());
-            existente.setEmail(u.getEmail());
-            existente.setRol(u.getRol());
+            if (u.getEmail() != null) {
+                existente.setEmail(u.getEmail().trim().toLowerCase());
+            }
+            if (u.getRol() != null) {
+                existente.setRol(u.getRol());
+            }
             existente.setGenero(u.getGenero());
             existente.setFechaNacimiento(u.getFechaNacimiento());
             existente.setPesoActual(u.getPesoActual());
             existente.setObjetivoPrincipal(u.getObjetivoPrincipal());
+            existente.setFotoPerfil(u.getFotoPerfil());
 
             if (u.getPassword() != null && !u.getPassword().isBlank()) {
                 existente.setPassword(passwordEncoder.encode(u.getPassword()));
@@ -51,13 +59,16 @@ public class UsuarioService {
         }).orElse(null);
     }
 
-    //Eliminar
+    // Eliminar
     public void eliminar(Long id) {
         usuarioRepository.deleteById(id);
     }
 
     public Usuario login(String email, String password) {
-        return usuarioRepository.findByEmailAndPassword(email, password).orElse(null);
+        if (email == null || password == null) return null;
+        return usuarioRepository.findByEmail(email.trim().toLowerCase())
+                .filter(u -> passwordEncoder.matches(password, u.getPassword()))
+                .orElse(null);
     }
 
     public Usuario buscarPorId(Long id) {
@@ -65,7 +76,7 @@ public class UsuarioService {
     }
 
     public Optional<Usuario> findbyEmail(String email) {
-        return usuarioRepository.findByEmail(email);
+        if (email == null) return Optional.empty();
+        return usuarioRepository.findByEmail(email.trim().toLowerCase());
     }
-
 }

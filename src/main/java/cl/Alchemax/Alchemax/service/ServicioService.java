@@ -59,4 +59,13 @@ public class ServicioService {
     public List<Servicio> buscarServicio(String nombre) {
         return servicioRepository.findByNombre(nombre);
     }
+
+    //Eliminar
+    public boolean eliminar(Long id) {
+        if (servicioRepository.existsById(id)) {
+            servicioRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 }

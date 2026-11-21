@@ -68,7 +68,6 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-
         JwtGrantedAuthoritiesConverter roles =
                 new JwtGrantedAuthoritiesConverter();
 
@@ -99,10 +98,12 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/login"
                         ).permitAll()
+                        .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -112,10 +113,15 @@ public class SecurityConfig {
                                 "/api/servicios/**",
                                 "/api/categorias/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios")
+                                .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/servicios/**", "/api/categorias/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/servicios/**", "/api/categorias/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/servicios/**", "/api/categorias/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/servicios/**", "/api/categorias/**")
+                                .hasAnyRole("ADMIN", "NUTRICIONISTA")
+                        .requestMatchers(HttpMethod.PUT, "/api/servicios/**", "/api/categorias/**")
+                                .hasAnyRole("ADMIN", "NUTRICIONISTA")
+                        .requestMatchers(HttpMethod.DELETE, "/api/servicios/**", "/api/categorias/**")
+                                .hasAnyRole("ADMIN", "NUTRICIONISTA")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth -> oauth
@@ -128,18 +134,21 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(
-                List.of("http://localhost:5173")
+                List.of("http://localhost:5173", "http://127.0.0.1:5173")
         );
 
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
 
         config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
+                List.of("Authorization", "Content-Type", "Accept")
         );
+
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
@@ -148,5 +157,4 @@ public class SecurityConfig {
 
         return source;
     }
-
 }

@@ -30,6 +30,9 @@ public class CategoriaService {
 
         actualizar.setNombre(c.getNombre());
         actualizar.setDescripcion(c.getDescripcion());
+        if (c.getServiciosAsociados() != null) {
+            actualizar.setServiciosAsociados(c.getServiciosAsociados());
+        }
 
         return categoriaRepository.save(actualizar);
     }
