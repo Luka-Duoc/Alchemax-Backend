@@ -1,7 +1,7 @@
 package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
-import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 import cl.Alchemax.Alchemax.model.Cita;
 import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.security.AccessControlHelper;
@@ -51,7 +51,7 @@ public class CitaController {
             description = "Acceso denegado (requiere rol ADMIN o NUTRICIONISTA)",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -59,7 +59,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping
@@ -84,7 +84,7 @@ public class CitaController {
             description = "No tienes permisos para consultar esta cita",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -92,7 +92,7 @@ public class CitaController {
             description = "Cita no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -100,7 +100,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/{id}")
@@ -137,7 +137,7 @@ public class CitaController {
             description = "Acceso denegado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -145,7 +145,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/estado/{estado}")
@@ -170,7 +170,7 @@ public class CitaController {
             description = "Acceso denegado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -178,7 +178,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/profesional")
@@ -203,7 +203,7 @@ public class CitaController {
             description = "Acceso denegado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -211,7 +211,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/fecha")
@@ -236,7 +236,7 @@ public class CitaController {
             description = "No tienes permisos para consultar las citas de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -244,7 +244,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/usuario/{usuarioId}")
@@ -277,7 +277,7 @@ public class CitaController {
             description = "Datos de la cita inválidos",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -285,7 +285,7 @@ public class CitaController {
             description = "No puedes agendar citas a nombre de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -293,7 +293,7 @@ public class CitaController {
             description = "Conflicto de horario para el profesional seleccionado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -301,7 +301,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @PostMapping
@@ -356,7 +356,7 @@ public class CitaController {
             description = "Datos de la cita inválidos",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -364,7 +364,7 @@ public class CitaController {
             description = "No tienes permisos para modificar esta cita",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -372,7 +372,7 @@ public class CitaController {
             description = "Cita no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -380,7 +380,7 @@ public class CitaController {
             description = "Conflicto de horario para el profesional seleccionado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -388,7 +388,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @PutMapping("/{id}")
@@ -440,7 +440,7 @@ public class CitaController {
             description = "Estado no válido",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -448,7 +448,7 @@ public class CitaController {
             description = "No tienes permisos para cambiar el estado de esta cita",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -456,7 +456,7 @@ public class CitaController {
             description = "Cita no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -464,7 +464,7 @@ public class CitaController {
             description = "Conflicto de horario al reactivar la cita",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -472,7 +472,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @PutMapping("/{id}/estado")
@@ -482,7 +482,7 @@ public class CitaController {
             Authentication authentication
     ) {
         if (!Cita.ESTADOS_VALIDOS.contains(estado)) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Estado no válido",
                     "El estado debe ser Programada, Confirmada, Completada o Cancelada.",
@@ -530,7 +530,7 @@ public class CitaController {
             description = "Solo el personal clínico o administrativo puede eliminar citas",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -538,7 +538,7 @@ public class CitaController {
             description = "Cita no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -546,7 +546,7 @@ public class CitaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/{id}")

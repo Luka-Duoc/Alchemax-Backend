@@ -1,6 +1,6 @@
 package cl.Alchemax.Alchemax.controller;
 
-import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 import cl.Alchemax.Alchemax.model.Carrito;
 import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CarritoService;
@@ -42,7 +42,7 @@ public class CarritoController {
             description = "No tienes permisos para acceder al carrito de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -50,7 +50,7 @@ public class CarritoController {
             description = "Carrito no encontrado para el usuario indicado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -58,7 +58,7 @@ public class CarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/usuario/{usuarioId}")
@@ -95,7 +95,7 @@ public class CarritoController {
             description = "Usuario o Servicio no válido",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -103,7 +103,7 @@ public class CarritoController {
             description = "No tienes permisos para modificar el carrito de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -111,7 +111,7 @@ public class CarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @PostMapping("/usuario/{usuarioId}/agregar")
@@ -128,7 +128,7 @@ public class CarritoController {
 
         Carrito carrito = carritoService.agregarItem(usuarioId, servicioId, cantidad);
         if (carrito == null) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Solicitud inválida",
                     "Usuario o Servicio no válido.",
@@ -156,7 +156,7 @@ public class CarritoController {
             description = "No se pudo remover el ítem",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -164,7 +164,7 @@ public class CarritoController {
             description = "No tienes permisos para modificar el carrito de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -172,7 +172,7 @@ public class CarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/usuario/{usuarioId}/remover")
@@ -188,7 +188,7 @@ public class CarritoController {
 
         Carrito carrito = carritoService.removerItem(usuarioId, servicioId);
         if (carrito == null) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Solicitud inválida",
                     "No se pudo remover el ítem.",
@@ -216,7 +216,7 @@ public class CarritoController {
             description = "Carrito no encontrado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -224,7 +224,7 @@ public class CarritoController {
             description = "No tienes permisos para vaciar el carrito de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -232,7 +232,7 @@ public class CarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/usuario/{usuarioId}/vaciar")
@@ -248,7 +248,7 @@ public class CarritoController {
 
         Carrito carrito = carritoService.vaciarCarrito(usuarioId);
         if (carrito == null) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Solicitud inválida",
                     "Carrito no encontrado.",

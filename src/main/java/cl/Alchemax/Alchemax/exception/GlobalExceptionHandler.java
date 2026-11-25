@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
@@ -14,12 +13,12 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResp> handleValidation(MethodArgumentNotValidException ex) {
         String detalle = ex.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining("; "));
 
-        ErrorResponse error = new ErrorResponse(
+        ErrorResp error = new ErrorResp(
                 "400",
                 "Datos inválidos",
                 detalle.isBlank() ? "Los datos enviados no son válidos." : detalle,
@@ -29,8 +28,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SolicitudInvalidaException.class)
-    public ResponseEntity<ErrorResponse> handleSolicitudInvalida(SolicitudInvalidaException ex) {
-        ErrorResponse error = new ErrorResponse(
+    public ResponseEntity<ErrorResp> handleSolicitudInvalida(SolicitudInvalidaException ex) {
+        ErrorResp error = new ErrorResp(
                 "400",
                 "Solicitud inválida",
                 ex.getMessage(),
@@ -40,8 +39,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccesoDenegadoException.class)
-    public ResponseEntity<ErrorResponse> handleAccesoDenegado(AccesoDenegadoException ex) {
-        ErrorResponse error = new ErrorResponse(
+    public ResponseEntity<ErrorResp> handleAccesoDenegado(AccesoDenegadoException ex) {
+        ErrorResp error = new ErrorResp(
                 "403",
                 "Acceso denegado",
                 ex.getMessage(),
@@ -51,8 +50,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HorarioNoDisponibleException.class)
-    public ResponseEntity<ErrorResponse> handleHorarioNoDisponible(HorarioNoDisponibleException ex) {
-        ErrorResponse error = new ErrorResponse(
+    public ResponseEntity<ErrorResp> handleHorarioNoDisponible(HorarioNoDisponibleException ex) {
+        ErrorResp error = new ErrorResp(
                 "409",
                 "Horario no disponible",
                 ex.getMessage(),
@@ -62,8 +61,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
-        ErrorResponse error = new ErrorResponse(
+    public ResponseEntity<ErrorResp> handleDataIntegrity(DataIntegrityViolationException ex) {
+        ErrorResp error = new ErrorResp(
                 "409",
                 "Conflicto de integridad",
                 "La operación entra en conflicto con un registro existente.",
@@ -73,8 +72,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SesionExpiradaException.class)
-    public ResponseEntity<ErrorResponse> handleSesionExpirada(SesionExpiradaException ex) {
-        ErrorResponse error = new ErrorResponse(
+    public ResponseEntity<ErrorResp> handleSesionExpirada(SesionExpiradaException ex) {
+        ErrorResp error = new ErrorResp(
                 "401",
                 "Sesión expirada",
                 ex.getMessage(),
