@@ -1,5 +1,6 @@
 package cl.Alchemax.Alchemax.controller;
 
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 import cl.Alchemax.Alchemax.model.Categoria;
 import cl.Alchemax.Alchemax.service.CategoriaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,7 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
+
 import org.springframework.web.bind.annotation.*;
 
 import javax.smartcardio.CardTerminal;
@@ -43,7 +44,7 @@ public class CategoriaController {
             description = "Categoría no encontradas",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -51,7 +52,7 @@ public class CategoriaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @GetMapping
@@ -77,7 +78,7 @@ public class CategoriaController {
             description = "La categoría no pudo ser creada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -85,7 +86,7 @@ public class CategoriaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @PostMapping
@@ -109,7 +110,7 @@ public class CategoriaController {
             description = "No se puede eliminar la categoría debido a servicios asociados a ella",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -117,7 +118,7 @@ public class CategoriaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/{id}")
@@ -147,7 +148,7 @@ public class CategoriaController {
             description = "El ID de la categoría no se pudo encontrar",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -155,7 +156,7 @@ public class CategoriaController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @PutMapping("/{id}")

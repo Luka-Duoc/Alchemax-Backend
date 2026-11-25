@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ErrorResponse {
+public class ErrorResp {
     @Schema(description = "Código de estado HTTP")
     private String status;
     @Schema(description = "Tipo o categoría del error")

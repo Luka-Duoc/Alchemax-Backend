@@ -2,7 +2,7 @@ package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.dto.ReporteAdminResponse;
 import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
-import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 import cl.Alchemax.Alchemax.model.Compra;
 import cl.Alchemax.Alchemax.security.AccessControlHelper;
 import cl.Alchemax.Alchemax.service.CompraService;
@@ -52,7 +52,7 @@ public class CompraController {
             description = "Acceso denegado (requiere rol ADMIN o NUTRICIONISTA)",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -60,7 +60,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping
@@ -97,7 +97,7 @@ public class CompraController {
             description = "Período de consulta no válido",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -105,7 +105,7 @@ public class CompraController {
             description = "Acceso denegado (requiere rol ADMIN o NUTRICIONISTA)",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -113,7 +113,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/reporte")
@@ -146,7 +146,7 @@ public class CompraController {
             description = "No tienes permisos para consultar esta compra",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -154,7 +154,7 @@ public class CompraController {
             description = "Compra no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -162,7 +162,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/{id}")
@@ -200,7 +200,7 @@ public class CompraController {
             description = "No tienes permisos para consultar el historial de compras de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -208,7 +208,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @GetMapping("/usuario/{usuarioId}")
@@ -241,7 +241,7 @@ public class CompraController {
             description = "Usuario o servicio no encontrado, o datos de compra inválidos",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -249,7 +249,7 @@ public class CompraController {
             description = "No tienes permisos para registrar compras en la cuenta de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -257,7 +257,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @PostMapping("/usuario/{usuarioId}")
@@ -298,7 +298,7 @@ public class CompraController {
             description = "Estado de compra no válido",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -306,7 +306,7 @@ public class CompraController {
             description = "Acceso denegado (requiere rol ADMIN o NUTRICIONISTA)",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -314,7 +314,7 @@ public class CompraController {
             description = "Compra no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -322,7 +322,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @PutMapping("/{id}/estado")
@@ -360,7 +360,7 @@ public class CompraController {
             description = "Solo un administrador puede eliminar registros de compras",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -368,7 +368,7 @@ public class CompraController {
             description = "Compra no encontrada",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -376,7 +376,7 @@ public class CompraController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/{id}")

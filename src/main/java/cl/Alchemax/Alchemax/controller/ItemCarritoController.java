@@ -1,7 +1,7 @@
 package cl.Alchemax.Alchemax.controller;
 
 import cl.Alchemax.Alchemax.exception.AccesoDenegadoException;
-import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 import cl.Alchemax.Alchemax.model.Carrito;
 import cl.Alchemax.Alchemax.model.ItemCarrito;
 import cl.Alchemax.Alchemax.security.AccessControlHelper;
@@ -50,7 +50,7 @@ public class ItemCarritoController {
             description = "Acceso denegado (solo ADMIN)",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -58,7 +58,7 @@ public class ItemCarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @GetMapping
@@ -88,7 +88,7 @@ public class ItemCarritoController {
             description = "No tienes permisos para acceder a un ítem de otro carrito",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -96,7 +96,7 @@ public class ItemCarritoController {
             description = "El ID del ítem no se pudo encontrar",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -104,7 +104,7 @@ public class ItemCarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @GetMapping("/{id}")
@@ -143,7 +143,7 @@ public class ItemCarritoController {
             description = "No tienes permisos para consultar los ítems del carrito de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -151,7 +151,7 @@ public class ItemCarritoController {
             description = "Carrito no encontrado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -159,7 +159,7 @@ public class ItemCarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @GetMapping("/carrito/{carritoId}")
@@ -197,7 +197,7 @@ public class ItemCarritoController {
             description = "Carrito o Servicio no válido",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -205,7 +205,7 @@ public class ItemCarritoController {
             description = "No tienes permisos para modificar el carrito de otro usuario",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -213,7 +213,7 @@ public class ItemCarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @PostMapping("/carrito/{carritoId}")
@@ -225,7 +225,7 @@ public class ItemCarritoController {
 
         Carrito carrito = itemCarritoService.obtenerCarrito(carritoId);
         if (carrito == null) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Solicitud inválida",
                     "Carrito o Servicio no válido.",
@@ -243,7 +243,7 @@ public class ItemCarritoController {
 
         ItemCarrito item = itemCarritoService.guardarEnCarrito(carrito, servicioId, cantidad);
         if (item == null) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Solicitud inválida",
                     "Carrito o Servicio no válido.",
@@ -271,7 +271,7 @@ public class ItemCarritoController {
             description = "Cantidad no válida",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -279,7 +279,7 @@ public class ItemCarritoController {
             description = "No tienes permisos para modificar un ítem de otro carrito",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -287,7 +287,7 @@ public class ItemCarritoController {
             description = "El ID del ítem o del servicio no se pudo encontrar",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -295,7 +295,7 @@ public class ItemCarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @PutMapping("/{id}")
@@ -305,7 +305,7 @@ public class ItemCarritoController {
             Authentication authentication
     ) {
         if (item.getCantidad() <= 0) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Cantidad no válida",
                     "La cantidad debe ser mayor a 0.",
@@ -346,7 +346,7 @@ public class ItemCarritoController {
             description = "No tienes permisos para eliminar un ítem de otro carrito",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -354,7 +354,7 @@ public class ItemCarritoController {
             description = "El ID del ítem no se pudo encontrar",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -362,7 +362,7 @@ public class ItemCarritoController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/{id}")

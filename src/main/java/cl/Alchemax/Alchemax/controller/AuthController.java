@@ -4,7 +4,7 @@ import cl.Alchemax.Alchemax.dto.AuthResponse;
 import cl.Alchemax.Alchemax.dto.LoginRequest;
 import cl.Alchemax.Alchemax.dto.RegisterRequest;
 import cl.Alchemax.Alchemax.dto.UpdateProfileRequest;
-import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 import cl.Alchemax.Alchemax.model.Rol;
 import cl.Alchemax.Alchemax.model.Usuario;
 import cl.Alchemax.Alchemax.security.JwtService;
@@ -50,7 +50,7 @@ public class AuthController {
         String emailNormalizado = request.getEmail().trim().toLowerCase();
 
         if (usuarioService.findbyEmail(emailNormalizado).isPresent()) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "409",
                     "Correo duplicado",
                     "El correo electrónico ya se encuentra registrado.",
@@ -63,7 +63,7 @@ public class AuthController {
         if (generoRaw.isEmpty() || "string".equals(generoRaw)) {
             generoRaw = "otro";
         } else if (!GENEROS_VALIDOS.contains(generoRaw)) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "400",
                     "Género inválido",
                     "El género debe ser masculino, femenino, otro o prefiero-no-decirlo.",
@@ -87,7 +87,7 @@ public class AuthController {
 
         Usuario guardado = usuarioService.guardar(nuevo);
         if (guardado == null) {
-            ErrorResponse error = new ErrorResponse(
+            ErrorResp error = new ErrorResp(
                     "409",
                     "Correo duplicado",
                     "El correo electrónico ya se encuentra registrado.",
@@ -113,7 +113,7 @@ public class AuthController {
                     return ResponseEntity.ok(AuthResponse.from(token, u));
                 })
                 .orElseGet(() -> {
-                    ErrorResponse error = new ErrorResponse(
+                    ErrorResp error = new ErrorResp(
                             "401",
                             "No autorizado",
                             "Correo electrónico o contraseña incorrectos.",
@@ -150,7 +150,7 @@ public class AuthController {
                     return ResponseEntity.ok(AuthResponse.from(nuevoToken, u));
                 })
                 .orElseGet(() -> {
-                    ErrorResponse error = new ErrorResponse(
+                    ErrorResp error = new ErrorResp(
                             "401",
                             "No autorizado",
                             "La cuenta asociada al token ya no se encuentra activa.",
@@ -185,7 +185,7 @@ public class AuthController {
         if (!nuevoEmail.equalsIgnoreCase(existente.getEmail())) {
             Optional<Usuario> otro = usuarioService.findbyEmail(nuevoEmail);
             if (otro.isPresent() && !otro.get().getId().equals(existente.getId())) {
-                ErrorResponse error = new ErrorResponse(
+                ErrorResp error = new ErrorResp(
                         "409",
                         "Correo duplicado",
                         "El correo electrónico ya está en uso por otra cuenta.",
@@ -198,7 +198,7 @@ public class AuthController {
         if (request.getNuevaPassword() != null && !request.getNuevaPassword().isBlank()) {
             if (request.getPasswordActual() == null
                     || !usuarioService.verificarPassword(existente, request.getPasswordActual())) {
-                ErrorResponse error = new ErrorResponse(
+                ErrorResp error = new ErrorResp(
                         "400",
                         "Contraseña actual incorrecta",
                         "La contraseña actual ingresada es incorrecta.",

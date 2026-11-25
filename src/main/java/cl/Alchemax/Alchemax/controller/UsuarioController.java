@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import cl.Alchemax.Alchemax.exception.ErrorResponse;
+import cl.Alchemax.Alchemax.exception.ErrorResp;
 
 import java.util.List;
 
@@ -50,7 +50,7 @@ public class UsuarioController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @GetMapping
@@ -76,7 +76,7 @@ public class UsuarioController {
             description = "Id de usuario no encontrado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -84,7 +84,7 @@ public class UsuarioController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @GetMapping("/{id}")
@@ -113,7 +113,7 @@ public class UsuarioController {
             description = "Usuario no pudo ser creado",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -121,7 +121,7 @@ public class UsuarioController {
             description = "Error interno del servidor.",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @PostMapping
@@ -146,7 +146,7 @@ public class UsuarioController {
             description = "El ID del usuario no se pudo encontrar",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -154,7 +154,7 @@ public class UsuarioController {
             description = "Error interno en el servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @DeleteMapping("/{id}")
@@ -180,7 +180,7 @@ public class UsuarioController {
             description = "El ID del usuario no se pudo encontrar",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResp.class)
             )
     )
     @ApiResponse(
@@ -188,7 +188,7 @@ public class UsuarioController {
             description = "Error interno del servidor",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(type = "object", implementation = ErrorResponse.class)
+                    schema = @Schema(type = "object", implementation = ErrorResp.class)
             )
     )
     @PutMapping("/{id}")
